@@ -1,0 +1,21 @@
+{
+  "name": "tien-do-lo",
+  "version": "0.1.0",
+  "description": "Bot game tu tiên Discord - MVP: tu luyện + đột phá cảnh giới + linh thạch",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js",
+    "deploy": "node deploy-commands.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "better-sqlite3": "^11.3.0",
+    "discord.js": "^14.16.0",
+    "dotenv": "^16.4.5",
+    "satori": "^0.26.0"
+  }
+}

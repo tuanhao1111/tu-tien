@@ -1,0 +1,10 @@
+node_modules/
+.env
+*.db
+*.db-wal
+*.db-shm
+*.db.bak*
+*.bak
+.DS_Store
+
+assets/img/_char_raw/
