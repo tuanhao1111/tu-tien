@@ -19,47 +19,46 @@ const VAL = '#ffe6a3';
 // Phong cách theo HẠNG (1..5): màu viền figure + bệ + huy hiệu xu (coin).
 //  (Bỏ emoji huy chương vì pipeline KHÔNG render emoji -> dùng XU VẼ + số hạng.)
 const RANK_STYLE = {
-  1: { figH: 190, fig: 104, ped: 132, edge: '#fdcb6e', pedTop: '#caa23a', pedBot: '#7a5f17', coin: '#fdcb6e', coinDark: '#7a5f17' },
-  2: { figH: 158, fig: 84, ped: 104, edge: '#dfe6e9', pedTop: '#9aa4ad', pedBot: '#525a61', coin: '#eaf0f2', coinDark: '#5a636b' },
-  3: { figH: 158, fig: 84, ped: 90, edge: '#e0a878', pedTop: '#b5743f', pedBot: '#5e3b20', coin: '#e7a877', coinDark: '#6b4326' },
-  4: { figH: 132, fig: 70, ped: 70, edge: '#6b7790', pedTop: '#3a4456', pedBot: '#222a38', coin: '#8a97b0', coinDark: '#2c344a' },
-  5: { figH: 132, fig: 70, ped: 60, edge: '#6b7790', pedTop: '#3a4456', pedBot: '#222a38', coin: '#8a97b0', coinDark: '#2c344a' },
+  1: { figH: 176, fig: 104, ped: 128, edge: '#fdcb6e', pedTop: '#caa23a', pedBot: '#7a5f17', coin: '#fdcb6e', coinDark: '#7a5f17' },
+  2: { figH: 150, fig: 84, ped: 102, edge: '#dfe6e9', pedTop: '#9aa4ad', pedBot: '#525a61', coin: '#eaf0f2', coinDark: '#5a636b' },
+  3: { figH: 150, fig: 84, ped: 88, edge: '#e0a878', pedTop: '#b5743f', pedBot: '#5e3b20', coin: '#e7a877', coinDark: '#6b4326' },
+  4: { figH: 126, fig: 70, ped: 70, edge: '#6b7790', pedTop: '#3a4456', pedBot: '#222a38', coin: '#8a97b0', coinDark: '#2c344a' },
+  5: { figH: 126, fig: 70, ped: 60, edge: '#6b7790', pedTop: '#3a4456', pedBot: '#222a38', coin: '#8a97b0', coinDark: '#2c344a' },
 };
+const TXT_SHADOW = '0 1px 4px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.9)'; // chữ nổi trên mọi nền
 
-// Huy hiệu XU: vòng tròn gradient theo hạng + SỐ hạng ở giữa (thay emoji 🥇).
+// Huy hiệu XU: vòng tròn số hạng, ĐÈ TUYỆT ĐỐI lên rìa trên bệ (không chen vào chữ).
 function coin(rank, s) {
-  const sz = rank === 1 ? 48 : 38;
+  const sz = rank === 1 ? 46 : 36;
   return h('div', { style: {
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      width: `${sz}px`, height: `${sz}px`, borderRadius: `${sz / 2}px`, marginTop: '-26px',
-      backgroundImage: `linear-gradient(135deg, #fffaf0, ${s.coin})`,
-      border: `3px solid ${s.coinDark}`,
-      fontSize: rank === 1 ? '24px' : '19px', fontWeight: 700, color: '#1a1205',
+      display: 'flex', position: 'absolute', top: `-${Math.round(sz * 0.5)}px`,
+      alignItems: 'center', justifyContent: 'center',
+      width: `${sz}px`, height: `${sz}px`, borderRadius: `${sz / 2}px`,
+      backgroundImage: `linear-gradient(135deg, #fffaf0, ${s.coin})`, border: `3px solid ${s.coinDark}`,
+      boxShadow: '0 2px 6px rgba(0,0,0,0.55)',
+      fontSize: rank === 1 ? '23px' : '18px', fontWeight: 700, color: '#1a1205',
     } }, String(rank));
 }
 
-// 1 CỘT bục cho 1 người. entry: {rank,name,score,charDataUri,avatarDataUri} | null.
-//  Ưu tiên ẢNH NHÂN VẬT (đã tách nền) đứng trên bục; thiếu -> avatar tròn; thiếu nữa -> khung trống.
+// 1 CỘT bục cho 1 người. entry: {rank,name,score,title,charDataUri,avatarDataUri} | null.
+//  Nhân vật HÒA vào nền nhờ QUẦNG SÁNG MỀM (không khung hộp) + đứng trên bục vinh quang.
 function podiumCol(entry, rank) {
   const s = RANK_STYLE[rank];
   let figure;
   if (entry && entry.charDataUri) {
-    // Ảnh char là canvas RỘNG (640×349) với nhân vật ở giữa, 2 bên trong suốt.
-    //  KHUNG DỌC có NỀN TỐI + quầng sáng (như niche trưng bày): phần trong suốt của
-    //  ảnh để lộ nền tối -> nhân vật (kể cả áo trắng) NỔI BẬT trên mọi nền. objectFit
-    //  cover cắt lề, nhân vật cao đúng figH, đứng sát bục.
-    const figW = Math.round(s.figH * 0.66);
-    figure = h('div', { style: {
-        display: 'flex', position: 'relative', width: `${figW}px`, height: `${s.figH}px`, overflow: 'hidden',
-        borderRadius: '14px 14px 6px 6px', border: `${rank === 1 ? 2 : 1}px solid ${s.edge}`,
-        backgroundImage: rank === 1
-          ? 'radial-gradient(ellipse at 50% 36%, rgba(253,203,110,0.32), rgba(6,10,18,0.86) 70%)'
-          : 'radial-gradient(ellipse at 50% 38%, rgba(120,170,235,0.22), rgba(6,10,18,0.82) 72%)',
-        boxShadow: rank === 1 ? '0 0 26px rgba(253,203,110,0.5)' : '0 0 12px rgba(0,0,0,0.45)',
-      } },
+    const figW = Math.round(s.figH * 0.74);
+    figure = h('div', { style: { display: 'flex', position: 'relative', width: `${figW}px`, height: `${s.figH}px` } },
+      // Quầng sáng MỀM toả ra sau lưng (fade hết viền) -> nhân vật như được rọi đèn,
+      //  hoà vào nền chứ không phải dán 1 cái hộp.
+      h('div', { style: {
+          display: 'flex', position: 'absolute', left: `${-Math.round(figW * 0.24)}px`, top: '4px',
+          width: `${Math.round(figW * 1.48)}px`, height: `${s.figH}px`,
+          backgroundImage: rank === 1
+            ? 'radial-gradient(ellipse at 50% 50%, rgba(253,203,110,0.45), rgba(253,203,110,0) 62%)'
+            : 'radial-gradient(ellipse at 50% 54%, rgba(150,190,245,0.28), rgba(0,0,0,0) 62%)',
+        } }),
+      // Ảnh nhân vật (cover, tự cắt lề trong suốt) — KHÔNG viền/hộp.
       h('img', { src: entry.charDataUri, width: figW, height: s.figH, style: { position: 'absolute', left: 0, top: 0, objectFit: 'cover' } }),
-      // feather mép dưới -> hòa vào bục (nhân vật như mọc lên từ bệ)
-      h('div', { style: { display: 'flex', position: 'absolute', left: 0, bottom: 0, width: `${figW}px`, height: '30px', backgroundImage: `linear-gradient(to top, ${s.pedTop}, rgba(0,0,0,0))` } }),
     );
   } else if (entry && entry.avatarDataUri) {
     figure = h('div', { style: { display: 'flex', alignItems: 'flex-end', height: `${s.figH}px` } },
@@ -68,20 +67,23 @@ function podiumCol(entry, rank) {
     figure = h('div', { style: { display: 'flex', width: `${s.fig}px`, height: `${s.figH}px` } });
   }
 
-  return h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', width: '184px' } },
-    figure,
-    h('div', { style: { display: 'flex', fontSize: rank === 1 ? '19px' : '16px', fontWeight: 700, color: '#ffffff', marginTop: '4px', maxWidth: '178px' } }, entry ? entry.name : '—'),
-    entry && entry.title && h('div', { style: { display: 'flex', fontSize: '12px', color: '#ffd86b', marginTop: '1px', maxWidth: '178px' } }, entry.title),
-    entry && h('div', { style: { display: 'flex', fontSize: '14px', color: VAL, marginTop: '2px' } }, entry.score),
-    // Bệ: cao theo hạng, mặt trên có XU số hạng (nhô lên rìa bệ) + vạch sáng cap.
-    h('div', { style: {
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        width: `${rank === 1 ? 168 : 150}px`, height: `${s.ped}px`, marginTop: '10px',
-        backgroundImage: `linear-gradient(to bottom, ${s.pedTop}, ${s.pedBot})`,
-        border: `1px solid ${s.edge}`, borderTop: `2px solid ${s.coin}`, borderRadius: '10px 10px 4px 4px',
-      } },
-      coin(rank, s),
-    ),
+  // Nhãn: tên · danh hiệu · cảnh giới (đều có bóng đổ -> không bị nền nuốt).
+  const label = h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '5px', maxWidth: '188px' } },
+    h('div', { style: { display: 'flex', fontSize: rank === 1 ? '19px' : '16px', fontWeight: 700, color: '#ffffff', textShadow: TXT_SHADOW } }, entry ? entry.name : '—'),
+    entry && entry.title && h('div', { style: { display: 'flex', fontSize: '12px', fontWeight: 700, color: '#ffd86b', marginTop: '1px', textShadow: TXT_SHADOW } }, entry.title),
+    entry && h('div', { style: { display: 'flex', fontSize: '13px', color: VAL, marginTop: '1px', textShadow: TXT_SHADOW } }, entry.score),
+  );
+
+  // Bệ (relative) + xu đè lên rìa trên.
+  const pedestal = h('div', { style: {
+      display: 'flex', position: 'relative', width: `${rank === 1 ? 170 : 150}px`, height: `${s.ped}px`, marginTop: '12px',
+      backgroundImage: `linear-gradient(to bottom, ${s.pedTop}, ${s.pedBot})`,
+      border: `1px solid ${s.edge}`, borderTop: `2px solid ${s.coin}`, borderRadius: '10px 10px 4px 4px',
+      boxShadow: rank === 1 ? '0 0 20px rgba(253,203,110,0.35)' : '0 2px 8px rgba(0,0,0,0.4)',
+    } }, coin(rank, s));
+
+  return h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', width: '190px' } },
+    figure, label, pedestal,
   );
 }
 
@@ -132,11 +134,14 @@ function markup(d) {
     : h('div', { style: { display: 'flex', width: `${W - 48}px`, marginTop: '4px' } }, restPanel(d.rest || []));
 
   return h('div', { style: rootStyle },
-    // Tiêu đề
-    h('div', { style: { display: 'flex', fontSize: '34px', fontWeight: 700, color: '#ffd86b', letterSpacing: '2px' } }, d.title),
-    h('div', { style: { display: 'flex', fontSize: '15px', color: '#c4ccdb', marginTop: '2px', marginBottom: '4px' } }, d.subtitle),
-    // Bục (cao hơn để chứa ảnh nhân vật đứng)
-    h('div', { style: { display: 'flex', flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', height: '372px' } },
+    // TIÊU ĐỀ: gói trong 1 dải đầu (căn giữa, có bóng đổ + gạch vàng) cho cân & dễ đọc.
+    h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '12px' } },
+      h('div', { style: { display: 'flex', fontSize: '36px', fontWeight: 700, color: '#ffd86b', letterSpacing: '3px', textShadow: '0 2px 8px rgba(0,0,0,0.85)' } }, d.title),
+      h('div', { style: { display: 'flex', fontSize: '14px', color: '#dbe2ee', marginTop: '3px', letterSpacing: '1px', textShadow: '0 1px 4px rgba(0,0,0,0.9)' } }, d.subtitle),
+      h('div', { style: { display: 'flex', width: '210px', height: '2px', marginTop: '7px', backgroundImage: 'linear-gradient(to right, rgba(212,175,55,0), rgba(212,175,55,0.85), rgba(212,175,55,0))' } }),
+    ),
+    // Bục (cao để chứa nhân vật đứng) — căn đáy.
+    h('div', { style: { display: 'flex', flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', height: '360px' } },
       ...order.map((rank) => podiumCol(p[rank - 1] || null, rank)),
     ),
     bottom,

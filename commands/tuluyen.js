@@ -118,26 +118,27 @@ function tuLuyenView(p, username, now) {
     .setColor(config.colors.primary)
     .setTitle('🧘 Tu Luyện Trường')
     .setDescription(
-      'Chọn cách tu hành:\n\n' +
-      `🧘 **Vận công** — chọn một mốc thời gian, **nhập định** rồi nhận tu vi (~${config.cultivate.ratePerMin}/phút). Đủ giờ (kể cả offline) thì thu trọn; thu sớm nhận phần đã tích.\n` +
-      `🎙️ **Tu luyện qua Voice** — bật chế độ rồi ngồi kênh thoại tích **${v.ratePerMin || 3}/phút** (cần **≥${v.minCompany || 2} người**).\n` +
-      '🚪 **Bế quan** — nhập định tích tu vi theo thời gian, cả khi offline.\n' +
-      '💊 **Luyện đan** — chế đan dược (mở ở Kim Đan).\n\n' + tuViLine,
+      `${tuViLine}\n\n` +
+      `🧘 **Vận Công** — chọn **mốc thời gian** bên dưới để nhập định, nhận **~${config.cultivate.ratePerMin} tu vi/phút** (tính cả khi offline; thu sớm vẫn nhận một phần).\n\n` +
+      '**Cách tu hành khác** _(nút bên dưới):_\n' +
+      `🎙️ Voice — ngồi kênh thoại ≥${v.minCompany || 2} người tích **${v.ratePerMin || 3}/phút**　·　🚪 Bế quan — tích lâu dài kể cả offline\n` +
+      '💊 Luyện đan — chế đan dược (Kim Đan)　·　🎲 Kỳ ngộ — sự kiện phiêu lưu tìm cơ duyên',
     )
-    .setFooter({ text: 'Chọn số phút để vận công, hoặc bật Voice / bế quan.' });
+    .setFooter({ text: 'Bấm số phút để vận công · các nút dưới cho cách tu hành khác.' });
 
+  // Hàng 1: MỐC THỜI GIAN vận công (hành động chính).
   const durRow = new ActionRowBuilder();
   for (const min of (config.cultivate.durations || []).slice(0, 5)) {
     durRow.addComponents(
-      new ButtonBuilder().setCustomId(`cultivate_start:${min}`).setLabel(`🧘 ${min} phút`).setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId(`cultivate_start:${min}`).setLabel(`${min} phút`).setStyle(ButtonStyle.Primary),
     );
   }
+  // Hàng 2: cách tu hành khác (đã BỎ Rèn khí — Lò Rèn có kênh/panel riêng).
   const actRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('cultivate_voice_on').setLabel('🎙️ Bật Voice').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId('panel_seclude').setLabel('🚪 Bế quan').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId('panel_luyendan').setLabel('💊 Luyện đan').setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId('panel_loren').setLabel('🔨 Rèn khí').setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId('panel_kyngo').setLabel('🎲 Kỳ ngộ').setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId('cultivate_voice_on').setLabel('Voice').setStyle(ButtonStyle.Secondary).setEmoji('🎙️'),
+    new ButtonBuilder().setCustomId('panel_seclude').setLabel('Bế quan').setStyle(ButtonStyle.Secondary).setEmoji('🚪'),
+    new ButtonBuilder().setCustomId('panel_luyendan').setLabel('Luyện đan').setStyle(ButtonStyle.Success).setEmoji('💊'),
+    new ButtonBuilder().setCustomId('panel_kyngo').setLabel('Kỳ ngộ').setStyle(ButtonStyle.Success).setEmoji('🎲'),
   );
   return { embeds: [e], components: [durRow, actRow] };
 }

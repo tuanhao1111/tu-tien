@@ -15,7 +15,7 @@ module.exports = {
     // Màu chủ đạo MỖI KÊNH (đại tu UI: mỗi panel một sắc riêng để dễ nhận diện).
     chan: {
       soNhap: 0x55efc4, tuLuyen: 0x6c5ce7, dotPha: 0xfdcb6e, nhiemVu: 0x74b9ff,
-      monPhai: 0xe17055, hoSo: 0x0984e3, trangBi: 0xa29bfe, luyenTruong: 0x00b894,
+      monPhai: 0xe17055, hoSo: 0x0984e3, trangBi: 0xa29bfe, luyenTruong: 0x00b894, loRen: 0xe67e22,
       dauDai: 0xd63031, bossTheGioi: 0x2d3436, bangXepHang: 0xfdcb6e, shop: 0xe84393,
       toDoi: 0x9b59b6,
     },
@@ -230,6 +230,7 @@ module.exports = {
     bossTheGioi: process.env.CH_BOSS_THE_GIOI || process.env.CH_BOSS || '',  // kênh "boss thế giới" (công phạt chung)
     toDoi:       process.env.CH_TO_DOI        || '',  // kênh "phó bản tổ đội" (co-op 2-4 người)
     shop:        process.env.CH_SHOP          || '',  // kênh "phường thị" (shop bán vật phẩm tiêu hao)
+    loRen:       process.env.CH_LO_REN        || '',  // kênh "lò rèn" (rèn/cường hóa/nâng bậc trang bị)
     // (GĐ18 BỎ: trangBi -> trong panel Hồ Sơ; dotPha -> trong panel Tu Luyện)
   },
   adminRoleId: process.env.ADMIN_ROLE_ID || '', // role được phép chạy /setup (rỗng = chỉ Manage Guild)
@@ -253,6 +254,7 @@ module.exports = {
     boss:        'bossTheGioi',
     toduoi:      'toDoi',
     shop:        'shop',
+    loren:       'loRen',
     // (trangbi: bỏ gate kênh — dùng tự do qua nút Hồ Sơ / lệnh /trangbi)
     cottruyen:'nhiemVu',
     nhiemvu:  'nhiemVu',

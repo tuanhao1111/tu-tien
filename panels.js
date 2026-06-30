@@ -166,6 +166,20 @@ function shop() {
   return { embeds: [e], components: [ui.row(ui.btn('panel_shop', 'Vào Phường Thị', 'primary', { emoji: '🛒' }))] };
 }
 
+function loRen() {
+  const e = ui.panelEmbed('loRen', {
+    title: '🔨 Lò Rèn',
+    desc:
+      'Lò rèn của tu sĩ — **rèn vũ khí & trang bị** theo ý muốn. Mở khóa ở **🟡 Kim Đan**.\n\n' +
+      '🔨 **Chế tạo** — tạo món MỚI (chọn ô + độ hiếm) từ nguyên liệu + 🔩 Tinh Thiết + linh thạch.\n' +
+      '⚒️ **Cường hóa** — +chỉ số cho món đang có (cap theo độ hiếm; bại cao có thể tụt cấp).\n' +
+      '⬆️ **Nâng bậc** — nâng độ hiếm thấp → cao (giữ cấp cường hóa).\n\n' +
+      '🧧 **Hộ Khí Phù** chống tụt khi bại · 📜 **Thiên Mệnh Phù** tăng tỉ lệ _(mua ở Phường Thị Cao Cấp)_.',
+    footer: 'Bấm để mở Lò Rèn của riêng bạn.',
+  });
+  return { embeds: [e], components: [ui.row(ui.btn('panel_loren', 'Mở Lò Rèn', 'success', { emoji: '🔨' }))] };
+}
+
 // 🏔️ Bảng Xếp Hạng — ảnh chụp 2 bảng + nút realtime (dựng từ DB).
 function bangXepHang() {
   return leaderboard.panelView();
@@ -183,6 +197,7 @@ const PANELS = {
   bossTheGioi: { key: 'bossTheGioi', name: 'Boss Thế Giới',  build: bossTheGioi },
   toDoi:       { key: 'toDoi',       name: 'Phó Bản Tổ Đội', build: toDoi },
   shop:        { key: 'shop',        name: 'Phường Thị',     build: shop },
+  loRen:       { key: 'loRen',       name: 'Lò Rèn',         build: loRen },
   bangXepHang: { key: 'bangXepHang', name: 'Bảng Xếp Hạng',  build: bangXepHang },
 };
 
@@ -205,7 +220,7 @@ for (const [pk, meta] of Object.entries(PANELS)) {
 //  Panel "động" (boss/đấu pháp/BXH) tự đăng ký live ở command tương ứng. Ở đây chỉ
 //  đăng ký các panel TĨNH cần sticky để không bị tin nhắn người chơi đẩy trôi.
 const livepanels = require('./util/livepanels');
-for (const key of ['luyenTruong', 'tuLuyen', 'monPhai', 'shop', 'nhiemVu', 'toDoi']) {
+for (const key of ['luyenTruong', 'tuLuyen', 'monPhai', 'shop', 'nhiemVu', 'toDoi', 'loRen']) {
   if (PANELS[key]) livepanels.register(key, PANELS[key].build, { sticky: true, stickyOnly: true });
 }
 
