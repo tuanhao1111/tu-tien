@@ -16,14 +16,27 @@ const PANEL = 'rgba(10,16,28,0.62)';
 const BOX = 'rgba(8,12,20,0.5)';
 const VAL = '#ffe6a3';
 
-// Phong cách theo HẠNG (1..5): màu viền figure + bệ + nhãn.
+// Phong cách theo HẠNG (1..5): màu viền figure + bệ + huy hiệu xu (coin).
+//  (Bỏ emoji huy chương vì pipeline KHÔNG render emoji -> dùng XU VẼ + số hạng.)
 const RANK_STYLE = {
-  1: { figH: 190, fig: 104, ped: 132, medal: '🥇', edge: '#fdcb6e', pedTop: '#caa23a', pedBot: '#7a5f17' },
-  2: { figH: 158, fig: 84, ped: 104, medal: '🥈', edge: '#dfe6e9', pedTop: '#9aa4ad', pedBot: '#525a61' },
-  3: { figH: 158, fig: 84, ped: 90, medal: '🥉', edge: '#e0a878', pedTop: '#b5743f', pedBot: '#5e3b20' },
-  4: { figH: 132, fig: 70, ped: 70, medal: '4', edge: GOLD_SOFT, pedTop: '#3a4456', pedBot: '#222a38' },
-  5: { figH: 132, fig: 70, ped: 60, medal: '5', edge: GOLD_SOFT, pedTop: '#3a4456', pedBot: '#222a38' },
+  1: { figH: 190, fig: 104, ped: 132, edge: '#fdcb6e', pedTop: '#caa23a', pedBot: '#7a5f17', coin: '#fdcb6e', coinDark: '#7a5f17' },
+  2: { figH: 158, fig: 84, ped: 104, edge: '#dfe6e9', pedTop: '#9aa4ad', pedBot: '#525a61', coin: '#eaf0f2', coinDark: '#5a636b' },
+  3: { figH: 158, fig: 84, ped: 90, edge: '#e0a878', pedTop: '#b5743f', pedBot: '#5e3b20', coin: '#e7a877', coinDark: '#6b4326' },
+  4: { figH: 132, fig: 70, ped: 70, edge: '#6b7790', pedTop: '#3a4456', pedBot: '#222a38', coin: '#8a97b0', coinDark: '#2c344a' },
+  5: { figH: 132, fig: 70, ped: 60, edge: '#6b7790', pedTop: '#3a4456', pedBot: '#222a38', coin: '#8a97b0', coinDark: '#2c344a' },
 };
+
+// Huy hiệu XU: vòng tròn gradient theo hạng + SỐ hạng ở giữa (thay emoji 🥇).
+function coin(rank, s) {
+  const sz = rank === 1 ? 48 : 38;
+  return h('div', { style: {
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      width: `${sz}px`, height: `${sz}px`, borderRadius: `${sz / 2}px`, marginTop: '-26px',
+      backgroundImage: `linear-gradient(135deg, #fffaf0, ${s.coin})`,
+      border: `3px solid ${s.coinDark}`,
+      fontSize: rank === 1 ? '24px' : '19px', fontWeight: 700, color: '#1a1205',
+    } }, String(rank));
+}
 
 // 1 CỘT bục cho 1 người. entry: {rank,name,score,charDataUri,avatarDataUri} | null.
 //  Ưu tiên ẢNH NHÂN VẬT (đã tách nền) đứng trên bục; thiếu -> avatar tròn; thiếu nữa -> khung trống.
@@ -38,8 +51,11 @@ function podiumCol(entry, rank) {
     const figW = Math.round(s.figH * 0.66);
     figure = h('div', { style: {
         display: 'flex', position: 'relative', width: `${figW}px`, height: `${s.figH}px`, overflow: 'hidden',
-        borderRadius: '14px 14px 6px 6px', border: `1px solid ${s.edge}`,
-        backgroundImage: 'radial-gradient(ellipse at 50% 38%, rgba(120,170,235,0.22), rgba(6,10,18,0.82) 72%)',
+        borderRadius: '14px 14px 6px 6px', border: `${rank === 1 ? 2 : 1}px solid ${s.edge}`,
+        backgroundImage: rank === 1
+          ? 'radial-gradient(ellipse at 50% 36%, rgba(253,203,110,0.32), rgba(6,10,18,0.86) 70%)'
+          : 'radial-gradient(ellipse at 50% 38%, rgba(120,170,235,0.22), rgba(6,10,18,0.82) 72%)',
+        boxShadow: rank === 1 ? '0 0 26px rgba(253,203,110,0.5)' : '0 0 12px rgba(0,0,0,0.45)',
       } },
       h('img', { src: entry.charDataUri, width: figW, height: s.figH, style: { position: 'absolute', left: 0, top: 0, objectFit: 'cover' } }),
       // feather mép dưới -> hòa vào bục (nhân vật như mọc lên từ bệ)
@@ -57,14 +73,14 @@ function podiumCol(entry, rank) {
     h('div', { style: { display: 'flex', fontSize: rank === 1 ? '19px' : '16px', fontWeight: 700, color: '#ffffff', marginTop: '4px', maxWidth: '178px' } }, entry ? entry.name : '—'),
     entry && entry.title && h('div', { style: { display: 'flex', fontSize: '12px', color: '#ffd86b', marginTop: '1px', maxWidth: '178px' } }, entry.title),
     entry && h('div', { style: { display: 'flex', fontSize: '14px', color: VAL, marginTop: '2px' } }, entry.score),
-    // Bệ: cao theo hạng, mặt trên có số hạng / huy chương.
+    // Bệ: cao theo hạng, mặt trên có XU số hạng (nhô lên rìa bệ) + vạch sáng cap.
     h('div', { style: {
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-        width: `${rank === 1 ? 168 : 150}px`, height: `${s.ped}px`, marginTop: '8px',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        width: `${rank === 1 ? 168 : 150}px`, height: `${s.ped}px`, marginTop: '10px',
         backgroundImage: `linear-gradient(to bottom, ${s.pedTop}, ${s.pedBot})`,
-        border: `1px solid ${GOLD_SOFT}`, borderRadius: '10px 10px 4px 4px', paddingTop: '8px',
+        border: `1px solid ${s.edge}`, borderTop: `2px solid ${s.coin}`, borderRadius: '10px 10px 4px 4px',
       } },
-      h('div', { style: { display: 'flex', fontSize: rank === 1 ? '34px' : '26px', fontWeight: 700, color: '#fff' } }, s.medal),
+      coin(rank, s),
     ),
   );
 }

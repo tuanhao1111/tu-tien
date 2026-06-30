@@ -121,9 +121,14 @@ function premiumEmbedText(player) {
 async function premiumMainView(player) {
   try {
     const items = premiumshop.PREMIUM.map((it) => {
-      // Vài món cao cấp tái dùng ảnh sẵn có (Tinh Thiết / bó đan); còn lại tile.
-      const key = it.cat === 'refine' ? 'mat_refine' : (it.cat === 'pill' && it.pillId ? `pill_${it.pillId}` : null);
-      return { name: it.name, desc: it.desc, price: String(it.price), cat: it.cat, iconDataUri: key ? assets.dataUri(key) : null };
+      // Ảnh RIÊNG cho từng món cao cấp: pshop_<id>.png. Thiếu -> tái dùng ảnh sẵn có
+      //  (Tinh Thiết / bó đan); thiếu nữa -> tile chữ.
+      let uri = assets.dataUri(`pshop_${it.id}`);
+      if (!uri) {
+        if (it.cat === 'refine') uri = assets.dataUri('mat_refine');
+        else if (it.cat === 'pill' && it.pillId) uri = assets.dataUri(`pill_${it.pillId}`);
+      }
+      return { name: it.name, desc: it.desc, price: String(it.price), cat: it.cat, iconDataUri: uri };
     });
     const buf = await shopCard.render({
       title: 'PHƯỜNG THỊ CAO CẤP', subtitle: 'Vật phẩm cao cấp đổi bằng Tiên Ngọc',

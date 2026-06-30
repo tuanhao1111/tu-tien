@@ -406,6 +406,25 @@
 - **foe_tower.png** (quái Thí Luyện Tháp) `an armored stone guardian challenger of a trial tower, Chinese xianxia RPG creature portrait, painterly, dramatic lighting, square 1:1, no text no watermark`
 - **npc_dau.png** (đài chủ NPC Đấu Pháp) `a confident rival cultivator dueling champion in a battle stance, Chinese xianxia RPG character portrait, painterly, dramatic lighting, square 1:1, no text no watermark`
 
+## 11. ⭐ Shop CAO CẤP — icon vật phẩm Tiên Ngọc (1:1) — `pshop_<id>.png`
+
+> Thẻ Phường Thị Cao Cấp tự thay tile chữ thành ảnh khi có file. (Túi Tinh Thiết dùng lại `mat_refine`, bó đan dùng lại `pill_<id>` — không cần gen thêm.)
+
+- **pshop_gender_ticket.png** `an ornate mystical voucher ticket engraved with a glowing yin-yang male-female symbol, jade and gold trim, Chinese xianxia RPG item icon, painterly, centered on dark background, square 1:1, no text no watermark`
+- **pshop_chest_tien.png** `an ornate treasure chest bursting open with violet immortal-grade equipment glow and purple aura, Chinese xianxia RPG loot chest item icon, painterly, centered on dark background, square 1:1, no text no watermark`
+- **pshop_chest_than.png** `a luxurious golden treasure chest radiating blinding divine golden light with godly artifacts inside, Chinese xianxia RPG legendary loot chest item icon, painterly, centered on dark background, square 1:1, no text no watermark`
+- **pshop_charm_hokhi.png** `a red and gold protective paper talisman charm with glowing guardian runes and a soft shield aura, Chinese xianxia RPG protection charm item icon, painterly, centered on dark background, square 1:1, no text no watermark`
+- **pshop_charm_thienmenh.png** `a glowing golden destiny talisman scroll inscribed with celestial fate runes and lucky star sparkles, Chinese xianxia RPG luck charm item icon, painterly, centered on dark background, square 1:1, no text no watermark`
+- **pshop_title_kiem_khach.png** `an emblem medallion of a single glowing sword wreathed in sharp sword-qi, blue steel, Chinese xianxia RPG title crest icon, painterly, centered on dark background, square 1:1, no text no watermark`
+- **pshop_title_dan_vuong.png** `an emblem medallion of an alchemy cauldron with a glowing golden pill rising in jade smoke, Chinese xianxia RPG title crest icon, painterly, centered on dark background, square 1:1, no text no watermark`
+- **pshop_title_chien_than.png** `an emblem medallion of crossed war blades wreathed in crimson flame and fierce battle aura, Chinese xianxia RPG title crest icon, painterly, centered on dark background, square 1:1, no text no watermark`
+- **pshop_title_tien_ton.png** `an emblem medallion of a supreme golden imperial crown radiating nine-heaven divine light, Chinese xianxia RPG title crest icon, painterly, centered on dark background, square 1:1, no text no watermark`
+
+## 12. ⭐ NỀN THẺ kiểu RPG (banner 16:9) — nền hồ sơ & bảng xếp hạng
+
+- **panel_hoSoCard.png** *(nền THẺ HỒ SƠ — thẻ tự vẽ nhân vật giữa + 2 bảng 2 bên, nền phải TỐI & TRỐNG giữa/2 bên)* `an ornate dark fantasy RPG character status screen background, a dim misty ancient cultivation hall at night, perfectly symmetrical, deep blue and gold tones, faint floating spirit lights and incense smoke, an empty darkened central alcove flanked by two recessed side panels, intricate gold filigree borders, deep cinematic vignette keeping the center and both sides dark and uncluttered, Chinese xianxia RPG UI panel art, painterly, no characters no people no items no text no watermark, wide 16:9 banner`
+- **panel_bangXepHang.png** *(nền BẢNG XẾP HẠNG — podium + bảng vẽ đè lên, chừa khoảng giữa-dưới hơi tối)* `an epic dark fantasy RPG hall of fame ranking background, a grand celestial palace floating among golden sunset clouds and distant misty mountain peaks, a towering ornate stone ranking monument in the far center, deep purple and gold cinematic lighting, swirling spirit energy, the lower-center area left open and slightly darker for a podium, majestic and aspirational, Chinese xianxia RPG art, painterly, no text no watermark, wide 16:9 banner`
+
 ---
 
 ## Dùng URL thay vì file (tùy chọn)
