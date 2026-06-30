@@ -528,11 +528,14 @@ module.exports = {
         flags: MessageFlags.Ephemeral,
       });
     }
+    // Render thẻ ảnh ~2-3s -> DEFER trước cho khỏi quá hạn 3s, rồi editReply.
     if (isSelf) {
-      return interaction.reply({ ...(await profileView(target, p)), flags: MessageFlags.Ephemeral });
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      return interaction.editReply(await profileView(target, p));
     }
     // Xem người khác: chỉ đọc, không nút.
-    return interaction.reply(await profileView(target, p, { interactive: false }));
+    await interaction.deferReply();
+    return interaction.editReply(await profileView(target, p, { interactive: false }));
   },
 
   buttons: {
@@ -542,7 +545,8 @@ module.exports = {
       if (!p) {
         return interaction.reply({ content: 'Đạo hữu chưa nhập đạo! Tới kênh **Sơ Nhập** bấm "Nhập đạo" trước nhé.', flags: MessageFlags.Ephemeral });
       }
-      return interaction.reply({ ...(await profileView(interaction.user, p)), flags: MessageFlags.Ephemeral });
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      return interaction.editReply(await profileView(interaction.user, p));
     },
 
     // Menu CUỘN chức năng ở Hồ Sơ: chuyển hướng tới handler tương ứng (giữ logic cũ).
@@ -601,9 +605,10 @@ module.exports = {
       if (res.err === 'nopoints') {
         return interaction.reply({ content: '😅 Hết điểm thuộc tính rồi! Đột phá để nhận thêm.', flags: MessageFlags.Ephemeral });
       }
+      // DEFER trước (render thẻ chậm) rồi editReply thay ảnh sạch.
+      await interaction.deferUpdate();
       const p = db.getPlayer(interaction.user.id);
-      // attachments:[] để thay ảnh thẻ Hồ Sơ sạch (không đọng attachment cũ).
-      return interaction.update({ ...(await profileView(interaction.user, p)), attachments: [] });
+      return interaction.editReply({ ...(await profileView(interaction.user, p)), attachments: [] });
     },
 
     async attr_respec(interaction) {
@@ -614,8 +619,9 @@ module.exports = {
       if (res.err === 'nostones') {
         return interaction.reply({ content: `😅 Không đủ linh thạch! Rửa điểm tốn ${config.currency.emoji} **${res.cost}${config.currency.short}**.`, flags: MessageFlags.Ephemeral });
       }
+      await interaction.deferUpdate();
       const p = db.getPlayer(interaction.user.id);
-      await interaction.update({ ...(await profileView(interaction.user, p)), attachments: [] });
+      await interaction.editReply({ ...(await profileView(interaction.user, p)), attachments: [] });
       return interaction.followUp({ content: `♻️ Đã rửa **${res.refunded}** điểm về quỹ.`, flags: MessageFlags.Ephemeral });
     },
 
@@ -625,8 +631,9 @@ module.exports = {
       if (res.err === 'full') return interaction.reply({ content: '💗 Sinh Mệnh đã đầy rồi, không cần liệu thương.', flags: MessageFlags.Ephemeral });
       if (res.err === 'nostones') return interaction.reply({ content: `😅 Không đủ linh thạch! Liệu thương tốn ${config.currency.emoji} **${res.cost}${config.currency.short}**.`, flags: MessageFlags.Ephemeral });
       if (res.err) return interaction.reply({ content: 'Không liệu thương được lúc này.', flags: MessageFlags.Ephemeral });
+      await interaction.deferUpdate();
       const p = db.getPlayer(interaction.user.id);
-      await interaction.update({ ...(await profileView(interaction.user, p)), attachments: [] });
+      await interaction.editReply({ ...(await profileView(interaction.user, p)), attachments: [] });
       return interaction.followUp({ content: `💗 Đã liệu thương — Sinh Mệnh hồi đầy! _(tốn ${config.currency.emoji} ${res.cost}${config.currency.short})_`, flags: MessageFlags.Ephemeral });
     },
 

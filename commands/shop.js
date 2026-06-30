@@ -217,7 +217,16 @@ function buy(userId, id, qty) {
 async function open(interaction) {
   const p = db.getPlayer(interaction.user.id);
   if (!p) return interaction.reply({ content: 'Đạo hữu chưa nhập đạo! Tới kênh **Sơ Nhập** trước nhé.', flags: MessageFlags.Ephemeral });
-  return interaction.reply({ ...(await mainView(p)), flags: MessageFlags.Ephemeral });
+  // Render thẻ ảnh có thể ~2-3s -> DEFER trước để khỏi quá hạn 3s của Discord, rồi editReply.
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  return interaction.editReply(await mainView(p));
+}
+
+// Cập nhật view CÓ RENDER ẢNH (chậm): defer trước (báo Discord chờ) rồi editReply.
+//  Tránh "This interaction failed" khi render thẻ vượt 3s trên host yếu.
+async function updCard(interaction, viewPromise) {
+  if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
+  return interaction.editReply({ ...(await viewPromise), attachments: [] });
 }
 
 module.exports = {
@@ -233,12 +242,12 @@ module.exports = {
       if (interaction.isStringSelectMenu() && action === 'sel') {
         return upd(itemView(db.getPlayer(id), interaction.values[0]));
       }
-      if (action === 'back') return upd(await mainView(db.getPlayer(id)));
-      if (action === 'premium') return upd(await premiumMainView(db.getPlayer(id)));
+      if (action === 'back') return updCard(interaction, mainView(db.getPlayer(id)));
+      if (action === 'premium') return updCard(interaction, premiumMainView(db.getPlayer(id)));
       if (action === 'buy') {
         const res = buy(id, parts[2], parseInt(parts[3], 10));
         if (res.err === 'nostones') return interaction.reply({ content: `😅 Thiếu linh thạch — cần ${cur.emoji} ${ui.num(res.cost)}${cur.short}.`, flags: MessageFlags.Ephemeral });
-        if (res.err) return upd(await mainView(db.getPlayer(id)));
+        if (res.err) return updCard(interaction, mainView(db.getPlayer(id)));
         const i = info(shop.get(parts[2]));
         await upd(itemView(db.getPlayer(id), parts[2]));
         return interaction.followUp({ content: `🛒 Đã mua **${i.name} ×${res.qty}** _(−${cur.emoji}${ui.num(res.cost)}${cur.short})_.`, flags: MessageFlags.Ephemeral });
@@ -256,15 +265,14 @@ module.exports = {
       if (interaction.isStringSelectMenu() && action === 'sel') {
         return upd(premiumItemView(db.getPlayer(id), interaction.values[0]));
       }
-      if (action === 'back') return upd(await premiumMainView(db.getPlayer(id)));
-      if (action === 'normal') return upd(await mainView(db.getPlayer(id)));
+      if (action === 'back') return updCard(interaction, premiumMainView(db.getPlayer(id)));
+      if (action === 'normal') return updCard(interaction, mainView(db.getPlayer(id)));
 
       // Dùng vé đổi giới tính (toggle nam<->nữ).
       if (action === 'usevoucher') {
         const res = db.useGenderTicket(id);
         if (res.err === 'noticket') return interaction.reply({ content: '🎟️ Bạn chưa có Vé Đổi Giới Tính — mua ở Phường Thị Cao Cấp trước.', flags: MessageFlags.Ephemeral });
-        if (res.err) return upd(await premiumMainView(db.getPlayer(id)));
-        await upd(await premiumMainView(db.getPlayer(id)));
+        await updCard(interaction, premiumMainView(db.getPlayer(id)));
         return interaction.followUp({ content: `✨ Đã đổi giới tính sang **${res.gender === 'nu' ? '♀️ Nữ' : '♂️ Nam'}** _(−1 vé)_. Ảnh Hồ Sơ sẽ cập nhật.`, flags: MessageFlags.Ephemeral });
       }
 

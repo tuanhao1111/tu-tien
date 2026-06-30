@@ -172,7 +172,9 @@ function markup(d) {
     display: 'flex', flexDirection: 'row', width: `${W}px`, height: `${H}px`,
     fontFamily: 'BVP', padding: '22px', alignItems: 'stretch',
   };
-  if (d.bgDataUri) { rootStyle.backgroundImage = `url(${d.bgDataUri})`; rootStyle.backgroundSize = `${W}px ${H}px`; }
+  // Phủ SCRIM tối lên nền (gộp gradient + url): nền chỉ còn là phông dịu -> panel thẻ
+  //  nổi rõ & KHÔNG bị "lệch" với khung vẽ sẵn trong ảnh nền (hợp mọi ảnh nền).
+  if (d.bgDataUri) { rootStyle.backgroundImage = `linear-gradient(rgba(7,11,20,0.5), rgba(7,11,20,0.62)), url(${d.bgDataUri})`; rootStyle.backgroundSize = `${W}px ${H}px`; }
   else rootStyle.backgroundImage = 'linear-gradient(135deg,#1b2436,#0d1320)';
 
   return h('div', { style: rootStyle },

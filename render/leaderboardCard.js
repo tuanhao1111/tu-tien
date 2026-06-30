@@ -118,7 +118,8 @@ function markup(d) {
     display: 'flex', flexDirection: 'column', width: `${W}px`, height: `${H}px`,
     fontFamily: 'BVP', padding: '24px', alignItems: 'center',
   };
-  if (d.bgDataUri) { rootStyle.backgroundImage = `url(${d.bgDataUri})`; rootStyle.backgroundSize = `${W}px ${H}px`; }
+  // Phủ SCRIM tối lên nền -> coin/nhân vật nổi rõ trên nền sáng (đền hoàng hôn…).
+  if (d.bgDataUri) { rootStyle.backgroundImage = `linear-gradient(rgba(7,11,20,0.42), rgba(7,11,20,0.58)), url(${d.bgDataUri})`; rootStyle.backgroundSize = `${W}px ${H}px`; }
   else rootStyle.backgroundImage = 'linear-gradient(135deg,#1b2436,#0d1320)';
 
   const p = d.podium || []; // index 0..4 = hạng 1..5
