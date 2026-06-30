@@ -9,6 +9,7 @@ const db = require('../database');
 const config = require('../config');
 const { PANELS } = require('../panels');
 const { isAdmin } = require('../util/admin');
+const channelroles = require('../util/channelroles');
 
 // Đăng MỚI hoặc SỬA panel ở 1 kênh. Trả chuỗi mô tả kết quả.
 async function syncPanel(client, key) {
@@ -99,6 +100,17 @@ module.exports = {
       db.deletePanel(saved.channel_key);
       results.push(`🗑️ Đã gỡ panel cũ **${saved.channel_key}** (không còn dùng).`);
     }
-    return interaction.editReply({ content: `🛠️ **Kết quả /setup:**\n${results.join('\n')}` });
+
+    // ROLE MỞ KHÓA KÊNH: tạo role + đặt quyền ẩn/hiện kênh theo cảnh giới (GĐ23).
+    try {
+      const crLines = await channelroles.applyChannelPermissions(interaction.client);
+      results.push(...crLines);
+    } catch (err) {
+      console.error('[setup] channelroles:', err);
+      results.push(`⚠️ Role kênh: lỗi khi đặt quyền (${err.message || err}).`);
+    }
+
+    const text = `🛠️ **Kết quả /setup:**\n${results.join('\n')}`;
+    return interaction.editReply({ content: text.length > 1900 ? text.slice(0, 1900) + '\n… (rút gọn)' : text });
   },
 };

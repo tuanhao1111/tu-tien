@@ -6,6 +6,7 @@ const features = require('../features');
 const alchemy = require('../alchemy');
 const { announce } = require('../util/announce');
 const coach = require('../util/coach');
+const channelroles = require('../util/channelroles');
 
 // --- Bảng Đột Phá tương tác (ẩn): trạng thái + toggle đan + nút đột phá ---
 function breakthroughView(userId, username) {
@@ -164,7 +165,8 @@ function doBreakthrough(userId, username) {
           ? `**${username}** đã **viên mãn đại đạo, tu thành Tiên Nhân** — truyền kỳ vạn cổ! 🎉`
           : `**${username}** vừa **độ kiếp thành công**, đột phá lên **${features.realmName(next.realm)}**! Chấn động thiên hạ.`,
       );
-    return { embeds: [embed], public: true, announce: [annEmbed], dm };
+    // realmUp: vừa vượt CẢNH GIỚI -> caller cấp role mở kênh mới (channelroles).
+    return { embeds: [embed], public: true, announce: [annEmbed], dm, realmUp: next.realm };
   }
 
   // Thất bại: tâm ma quấy nhiễu, mất một phần tu vi (vẫn giữ cảnh giới).
@@ -199,6 +201,7 @@ async function send(interaction, r, forceEphemeral) {
   await interaction.reply(opts);
   if (r.announce) for (const e of r.announce) announce(interaction.client, e);
   if (r.dm) coach.dm(interaction.user, r.dm); // DM dẫn dắt (nuốt lỗi nếu chặn DM)
+  if (r.realmUp != null) channelroles.grantUpTo(interaction.member, r.realmUp).catch(() => {}); // role mở kênh mới
 }
 
 module.exports = {
@@ -238,6 +241,7 @@ module.exports = {
         // Loan Vọng Âm Đài nếu có; kết quả cập nhật ngay trong bảng (ẩn) + đính lại bảng để đột phá tiếp.
         if (r.announce) for (const e of r.announce) announce(interaction.client, e);
         if (r.dm) coach.dm(interaction.user, r.dm); // DM dẫn dắt (nuốt lỗi nếu chặn DM)
+        if (r.realmUp != null) channelroles.grantUpTo(interaction.member, r.realmUp).catch(() => {}); // role mở kênh mới
         const after = breakthroughView(userId, interaction.user.username);
         const components = after.content ? [] : after.components;
         const embeds = r.embeds || [];

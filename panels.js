@@ -113,15 +113,20 @@ function luyenTruong() {
     title: '⛰️ Luyện Trường',
     desc:
       'Đạt **🟡 Kim Đan** để mở khu rèn luyện & farm:\n\n' +
-      '🐗 **Săn Yêu** — đánh nhanh yêu hoang kiếm linh thạch + tu vi.\n' +
       '🗼 **Thí Luyện Tháp** — leo tháp vô tận, càng cao thưởng càng hậu.\n' +
-      '🗺️ **Bí Cảnh** — thám hiểm theo lượt, rớt nguyên liệu + trang bị (`/bicanh`).',
+      '🗺️ **Bí Cảnh** — thám hiểm theo lượt, rớt nguyên liệu + trang bị (`/bicanh`).\n\n' +
+      '🐗 **Săn Yêu** mở SỚM hơn (từ **🌬️ Luyện Khí**) — có kênh **Bãi Săn Yêu** riêng.',
     footer: 'Cày khôn ngoan — Linh Khí Loãng khiến farm quá đà giảm hiệu suất.',
   });
   return { embeds: [e], components: [ui.row(
     ui.btn('panel_luyentruong', 'Vào Luyện Trường', 'success', { emoji: '⛰️' }),
     ui.btn('panel_bicanh', 'Bí Cảnh', 'primary', { emoji: '🗺️' }),
   )] };
+}
+
+// 🐗 Bãi Săn Yêu — kênh riêng (mở ở Luyện Khí), panel sticky.
+function sanYeu() {
+  return require('./commands/luyentruong').sanYeuPanelView();
 }
 
 // ⚔️ Đấu Pháp Đài — bảng xếp hạng LIVE + khiêu chiến CÔNG KHAI (sticky).
@@ -193,6 +198,7 @@ const PANELS = {
   monPhai:     { key: 'monPhai',     name: 'Môn Phái',       build: monPhai },
   hoSo:        { key: 'hoSo',        name: 'Hồ Sơ',          build: hoSo },
   luyenTruong: { key: 'luyenTruong', name: 'Luyện Trường',   build: luyenTruong },
+  sanYeu:      { key: 'sanYeu',      name: 'Bãi Săn Yêu',    build: sanYeu },
   dauDai:      { key: 'dauDai',      name: 'Đấu Pháp Đài',   build: dauDai },
   bossTheGioi: { key: 'bossTheGioi', name: 'Boss Thế Giới',  build: bossTheGioi },
   toDoi:       { key: 'toDoi',       name: 'Phó Bản Tổ Đội', build: toDoi },
@@ -220,7 +226,7 @@ for (const [pk, meta] of Object.entries(PANELS)) {
 //  Panel "động" (boss/đấu pháp/BXH) tự đăng ký live ở command tương ứng. Ở đây chỉ
 //  đăng ký các panel TĨNH cần sticky để không bị tin nhắn người chơi đẩy trôi.
 const livepanels = require('./util/livepanels');
-for (const key of ['luyenTruong', 'tuLuyen', 'monPhai', 'shop', 'nhiemVu', 'toDoi', 'loRen']) {
+for (const key of ['luyenTruong', 'tuLuyen', 'monPhai', 'shop', 'nhiemVu', 'toDoi', 'loRen', 'sanYeu']) {
   if (PANELS[key]) livepanels.register(key, PANELS[key].build, { sticky: true, stickyOnly: true });
 }
 

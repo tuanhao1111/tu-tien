@@ -85,10 +85,10 @@ const SECTIONS = [
     id: 'luyentruong', emoji: '⛰️', label: 'Luyện Trường',
     title: '⛰️ Luyện Trường — Khu Farm',
     body:
-      `Đạt **${cult.REALMS[3].emoji} ${cult.REALMS[3].name}** → mở **\`/luyentruong\`** (hoặc panel Luyện Trường).\n\n` +
+      `Đạt **${cult.REALMS[3].emoji} ${cult.REALMS[3].name}** → mở **\`/luyentruong\`** (Tháp + Bí Cảnh). 🐗 **Săn Yêu** mở SỚM hơn — từ **${cult.REALMS[config.farm.sanYeu.minRealm || 1].emoji} ${cult.REALMS[config.farm.sanYeu.minRealm || 1].name}**.\n\n` +
       `🌱 **Linh Điền** (ở panel **Tu Luyện**) — **trồng trọt**: mua 🌰 Linh Chủng ở Phường Thị → **gieo** → sau ${Math.round(config.farm.linhDien.growMs / 60000)} phút chín → thu **${config.farm.linhDien.yieldPerSeed}× Linh Thảo/hạt** (offline vẫn chín). Đếm ngược **tự cập nhật**.\n\n` +
-      `🐗 **Săn Yêu** — đánh nhanh 1 yêu hoang kiếm linh thạch + tu vi (cooldown **${Math.round(config.farm.sanYeu.cooldownMs / 1000)}s**). Thua không mất gì.\n\n` +
-      `🗼 **Thí Luyện Tháp** — leo tháp vô tận: thắng thì **lên tầng** + thưởng tăng dần; thua giữ nguyên kỷ lục (cooldown **${Math.round(config.farm.thap.cooldownMs / 1000)}s**). Có **⚡ Quét** gom nhanh thưởng. Cần có môn phái cho Săn Yêu & Tháp. _(Đếm ngược cooldown tự cập nhật.)_`,
+      `🐗 **Săn Yêu** (kênh **Bãi Săn Yêu** riêng, mở ở **${cult.REALMS[config.farm.sanYeu.minRealm || 1].emoji} ${cult.REALMS[config.farm.sanYeu.minRealm || 1].name}** — **chưa cần môn phái**) — đánh nhanh 1 yêu hoang kiếm linh thạch + tu vi (cooldown **${Math.round(config.farm.sanYeu.cooldownMs / 1000)}s**). Thua không mất gì. 🎲 Đôi khi gặp **Kỳ Ngộ** bất ngờ.\n\n` +
+      `🗼 **Thí Luyện Tháp** — leo tháp vô tận: thắng thì **lên tầng** + thưởng tăng dần; thua giữ nguyên kỷ lục (cooldown **${Math.round(config.farm.thap.cooldownMs / 1000)}s**). Có **⚡ Quét** gom nhanh thưởng. **Tháp cần có môn phái.** _(Đếm ngược cooldown tự cập nhật.)_`,
   },
   {
     id: 'dauphap', emoji: '⚔️', label: 'Đấu Pháp (PvP)',
@@ -123,7 +123,18 @@ const SECTIONS = [
     title: '📜 Cốt Truyện & Nhiệm Vụ Ngày',
     body:
       '📖 **Cốt truyện "Tiên Đồ Lộ Ký"** — chính tuyến dẫn dắt từng bước qua các cảnh giới, mỗi chương có thưởng. Mở ở kênh **Nhiệm Vụ** (nút 📖 Cốt truyện) hoặc `/cottruyen`.\n\n' +
+      'Giai đoạn đầu (Phàm Nhân → Luyện Khí → trước Trúc Cơ) có nhiều chương dẫn dắt: bái sư vận công, **săn yêu sơ thí**, **cơ duyên kỳ ngộ**, tích lũy căn cơ… giúp người mới làm quen từng hệ thống.\n\n' +
       '📋 **Nhiệm vụ hằng ngày** — tu luyện, luận đạo (chat), đột phá, bí cảnh, luyện đan… hoàn thành để lãnh thưởng, **reset mỗi ngày** (giờ VN). Mở bằng nút 📋 Nhiệm vụ ngày hoặc `/nhiemvu`.',
+  },
+  {
+    id: 'kyngo', emoji: '🎲', label: 'Kỳ ngộ',
+    title: '🎲 Kỳ Ngộ — Cơ Duyên Bất Ngờ',
+    body:
+      'Kỳ ngộ là **sự kiện phiêu lưu ngẫu nhiên** — nguồn tu vi / linh thạch / nguyên liệu phụ, rất hữu ích **giai đoạn đầu**. Mỗi kỳ ngộ cho **chọn 1 hướng xử lý**: gan dạ thì lời to, đôi khi cũng có rủi ro nhỏ.\n\n' +
+      `🎯 **Cách gặp kỳ ngộ:**\n` +
+      `• Bấm **🎲 Kỳ ngộ** ở panel **Tu Luyện** (hoặc \`/kyngo\`).\n` +
+      `• **Tự ập tới** khi đi **săn yêu** thắng trận, hoặc khi **tiến triển cốt truyện** (cơ hội ~${Math.round((config.kyngo.triggerChance || 0) * 100)}%).\n\n` +
+      `⏳ Sau mỗi lần **nhận thưởng** kỳ ngộ phải nghỉ **${Math.round((config.kyngo.cooldownMs || 0) / 60000)} phút** (đang nghỉ thì kỳ ngộ KHÔNG tự ập tới). Chỉ xem sự kiện thì miễn phí — bấm chọn mới tính cooldown.`,
   },
   {
     id: 'nhiptu', emoji: '🌫️', label: 'Nhịp tu hành',
@@ -160,10 +171,11 @@ const SECTIONS = [
     id: 'boss', emoji: '🐲', label: 'Boss thế giới',
     title: '🐲 Boss Thế Giới — Công Phạt Chung',
     body:
-      `Đạt **${cult.REALMS[3].emoji} ${cult.REALMS[3].name}** → mở kênh/panel **Boss Thế Giới** (\`/boss\`). Boss **CHUNG toàn server**, HP khổng lồ chia nhau đánh — **chỉ biến mất khi bị tiêu diệt** (không hết hạn). Panel **tự cập nhật HP ~5s**.\n\n` +
+      `Đạt **${cult.REALMS[3].emoji} ${cult.REALMS[3].name}** → mở kênh/panel **Boss Thế Giới** (\`/boss\`). Boss **CHUNG toàn server**, HP khổng lồ chia nhau đánh. Panel **tự cập nhật HP ~5s**.\n\n` +
+      `⏳ Boss **xuất hiện NGẪU NHIÊN trong ngày**, chỉ tồn tại **${Math.round((config.worldboss.lifetimeMs || 0) / 60000)} phút** rồi tự rút lui. Khi giáng thế sẽ **loan báo + @nhắc** toàn bộ người chơi ở **Vọng Âm Đài** — đừng bỏ lỡ!\n\n` +
       '⚔️ Bấm **Công Phạt** → đo tổng sát thương một đợt → trừ vào **HP chung**. Mọi người góp sát thương cùng hạ gục.\n\n' +
-      `🏆 **Chia thưởng theo % đóng góp:** linh thạch + tu vi + **rớt trang bị**. **Top sát thương** nhận thêm (+${Math.round((config.worldboss.topShareBonus || 0) * 100)}%) và **chắc chắn rớt đồ**. Top-3 luôn có đồ.\n\n` +
-      `⏱️ Mỗi đòn công phạt cách nhau **${Math.round((config.worldboss.attackCooldownMs || 0) / 60000)} phút** (cooldown thuần). Boss giáng thế định kỳ, tồn tại ~**${Math.round((config.worldboss.lifetimeMs || 0) / 3600000)}h** — loan báo ở **Vọng Âm Đài**.`,
+      `🏆 **Chia thưởng theo % đóng góp:** linh thạch + tu vi + **rớt trang bị**. **Top sát thương** nhận thêm (+${Math.round((config.worldboss.topShareBonus || 0) * 100)}%) và **chắc chắn rớt đồ**. Top-3 luôn có đồ. **Hết giờ chưa giết:** vẫn thưởng theo **% HP đã phá**.\n\n` +
+      `⏱️ Mỗi đòn công phạt cách nhau **${Math.round((config.worldboss.attackCooldownMs || 0) / 60000)} phút** (cooldown thuần).`,
   },
   {
     id: 'kenh', emoji: '📡', label: 'Các kênh',
@@ -175,12 +187,14 @@ const SECTIONS = [
       '🏯 **Môn Phái** — chọn & gia nhập phái.\n' +
       '📜 **Hồ Sơ** — xem bản thân, chỉ số, **trang bị**, cộng thuộc tính, nâng chiêu, túi đồ, cẩm nang này.\n' +
       '🛡️ **Trang Bị** — kho đồ, mặc/cường hóa/phân giải (6 ô, 5 độ hiếm).\n' +
-      '⛰️ **Luyện Trường** — Săn Yêu, Thí Luyện Tháp, Bí Cảnh _(cooldown tự đếm ngược)_.\n' +
+      '🐗 **Bãi Săn Yêu** — săn yêu nhanh (mở ở **🌬️ Luyện Khí**), panel **sticky**.\n' +
+      '⛰️ **Luyện Trường** — Thí Luyện Tháp, Bí Cảnh _(cooldown tự đếm ngược)_.\n' +
       '🛒 **Phường Thị** — shop bán nguyên liệu · hạt giống · Tinh Thiết · đan.\n' +
       '⚔️ **Đấu Pháp Đài** — Luận Võ Đài xếp hạng (PvP) — trận **công khai**, panel **sticky tự cập nhật**.\n' +
       '🐲 **Boss Thế Giới** — công phạt chung toàn server, panel HP **thời gian thực**.\n' +
       '🏔️ **Bảng Xếp Hạng** — Phong Vân Bảng / Phú Hào Bảng / Luận Võ Bảng (**tự cập nhật**).\n' +
-      '📣 **Vọng Âm Đài** — loan báo kỳ tích thiên hạ: độ kiếp, hạ boss, thần đan…',
+      '📣 **Vọng Âm Đài** — loan báo kỳ tích thiên hạ: độ kiếp, hạ boss, thần đan…\n\n' +
+      '🗝️ **Mở khóa kênh theo cảnh giới:** một số kênh **ẩn** cho tới khi đạo hữu đạt cảnh giới tương ứng — đột phá lên cảnh giới mới sẽ **tự được cấp vai trò** mở các kênh vừa mở khóa (Săn Yêu/BXH ở Luyện Khí, Môn Phái ở Trúc Cơ, Luyện Trường·Boss·Phường Thị·Lò Rèn·Tổ Đội ở Kim Đan, Đấu Pháp ở Nguyên Anh).',
   },
 ];
 

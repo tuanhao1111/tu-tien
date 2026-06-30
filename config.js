@@ -17,7 +17,7 @@ module.exports = {
       soNhap: 0x55efc4, tuLuyen: 0x6c5ce7, dotPha: 0xfdcb6e, nhiemVu: 0x74b9ff,
       monPhai: 0xe17055, hoSo: 0x0984e3, trangBi: 0xa29bfe, luyenTruong: 0x00b894, loRen: 0xe67e22,
       dauDai: 0xd63031, bossTheGioi: 0x2d3436, bangXepHang: 0xfdcb6e, shop: 0xe84393,
-      toDoi: 0x9b59b6,
+      toDoi: 0x9b59b6, sanYeu: 0x27ae60,
     },
   },
 
@@ -70,6 +70,25 @@ module.exports = {
   playerRoleId: process.env.PLAYER_ROLE_ID || '',
   playerRoleName: 'Đạo Hữu',
 
+  // --- ROLE MỞ KHÓA KÊNH theo CẢNH GIỚI (GĐ23) ---
+  //  Đạt cảnh giới mốc -> bot cấp role tương ứng -> role đó cho THẤY các kênh vừa mở.
+  //  Bot TỰ TẠO role (theo tên) nếu chưa có (cần Manage Roles) và — khi autoPermissions
+  //  bật — TỰ đặt quyền kênh khi /setup: ẩn với @everyone, chỉ role mới xem được.
+  //  Cấp role: lúc đăng ký (mốc realm 0) + mỗi lần ĐỘT PHÁ vượt cảnh giới + lazy-sync
+  //  khi người chơi tương tác (bù cho người cũ). Tắt cả hệ: enabled:false.
+  channelRoles: {
+    enabled: true,
+    autoPermissions: true,   // /setup tự đặt quyền ẩn/hiện kênh (cần bot có Manage Channels + Manage Roles, role bot nằm TRÊN role game)
+    // Mỗi mốc: realm cần đạt -> role (tên) -> các KÊNH (key trong channels) role đó mở.
+    //  Kênh khởi đầu (soNhap/tuLuyen/nhiemVu/hoSo/vongAmDai) KHÔNG gate — ai cũng thấy.
+    thresholds: [
+      { realm: 1, name: 'Luyện Khí Tu Sĩ',  channelKeys: ['sanYeu', 'bangXepHang'] },
+      { realm: 2, name: 'Trúc Cơ Tu Sĩ',    channelKeys: ['monPhai'] },
+      { realm: 3, name: 'Kim Đan Chân Nhân', channelKeys: ['luyenTruong', 'bossTheGioi', 'toDoi', 'shop', 'loRen'] },
+      { realm: 4, name: 'Nguyên Anh Lão Tổ', channelKeys: ['dauDai'] },
+    ],
+  },
+
   // --- Tu luyện VẬN CÔNG (/tuluyen): CHỌN thời gian vận công, nhận tu vi SAU đó ---
   //  Người chơi chọn 1 mốc thời gian rồi "vận công"; đủ giờ (kể cả offline) thì
   //  nhận tu vi = số phút × ratePerMin. Thu hoạch sớm vẫn nhận theo phần đã trôi.
@@ -101,6 +120,8 @@ module.exports = {
     cooldownMs: 10 * 60 * 1000, // 10 phút/lần kỳ ngộ (tính khi NHẬN thưởng)
     tuViPctBase: 0.08,          // thưởng tu vi quy theo % tu vi cần lên bậc (× hệ số sự kiện)
     stonesBase: 6,              // thưởng linh thạch nền (× hệ số sự kiện × (1+realm))
+    // GĐ23: kỳ ngộ còn TỰ BẬT RA khi đi săn yêu / làm nhiệm vụ cốt truyện (off-cooldown mới bật).
+    triggerChance: 0.28,        // tỉ lệ bắt gặp kỳ ngộ sau khi thắng săn yêu / qua 1 cảnh cốt truyện
   },
 
   // --- ĐỘT PHÁ (/dotpha) ---
@@ -152,6 +173,7 @@ module.exports = {
       cooldownMs: 30 * 1000,      // 30s (hạ từ 1' — GĐ17)
       foeMult: 0.95,              // yêu hoang hơi yếu hơn người chơi cùng bậc
       baseStones: 12, baseTuVi: 18, matChance: 0.45,
+      minRealm: 1,                // GĐ23: săn yêu mở ở 🌬️ Luyện Khí (không cần môn phái)
     },
     // Thí Luyện Tháp — leo tháp vô tận: thắng thì lên tầng + thưởng tăng dần.
     thap: {
@@ -231,6 +253,7 @@ module.exports = {
     toDoi:       process.env.CH_TO_DOI        || '',  // kênh "phó bản tổ đội" (co-op 2-4 người)
     shop:        process.env.CH_SHOP          || '',  // kênh "phường thị" (shop bán vật phẩm tiêu hao)
     loRen:       process.env.CH_LO_REN        || '',  // kênh "lò rèn" (rèn/cường hóa/nâng bậc trang bị)
+    sanYeu:      process.env.CH_SAN_YEU       || '',  // kênh "bãi săn yêu" (săn yêu nhanh — mở ở Luyện Khí)
     // (GĐ18 BỎ: trangBi -> trong panel Hồ Sơ; dotPha -> trong panel Tu Luyện)
   },
   adminRoleId: process.env.ADMIN_ROLE_ID || '', // role được phép chạy /setup (rỗng = chỉ Manage Guild)
@@ -249,6 +272,7 @@ module.exports = {
     kynang:   'monPhai',
     bicanh:      'luyenTruong',
     luyentruong: 'luyenTruong',
+    sanyeu:      'sanYeu',
     dautap:      'luyenTruong',
     dauphap:     'dauDai',
     boss:        'bossTheGioi',
@@ -361,9 +385,16 @@ module.exports = {
   worldboss: {
     enabled: true,
     minRealm: 3,            // cảnh giới mở Boss Thế Giới (Kim Đan)
-    tickMs: 30 * 1000,      // chu kỳ quét spawn (30s/lần — GĐ17)
-    respawnMs: 30 * 60 * 1000, // sau khi boss CHẾT, 30' sau có boss mới
-    lifetimeMs: 0,          // 0 = boss KHÔNG hết hạn -> CHỈ biến mất khi bị tiêu diệt (GĐ17)
+    tickMs: 30 * 1000,      // chu kỳ quét spawn (30s/lần)
+    // GĐ22: boss CHỈ tồn tại 60' rồi TỰ BIẾN MẤT; xuất hiện NGẪU NHIÊN trong ngày.
+    //  Sau khi boss biến mất (bị giết HOẶC hết giờ) -> chọn mốc spawn kế NGẪU NHIÊN
+    //  trong khoảng [spawnMinGapMs, spawnMaxGapMs]. Loan báo + @role người chơi khi giáng thế.
+    lifetimeMs: 60 * 60 * 1000, // boss sống 60' rồi tự rút lui (0 = không hết hạn)
+    spawnMinGapMs: 4 * 60 * 60 * 1000,  // tối thiểu 4h sau khi boss cũ biến mất mới có boss mới
+    spawnMaxGapMs: 10 * 60 * 60 * 1000, // tối đa 10h — mốc thực tế bốc ngẫu nhiên trong khoảng này
+    respawnMs: 30 * 60 * 1000, // (chỉ dùng tương thích bản cũ khi chưa có next_ts)
+    expireRewardScale: true,    // hết giờ mà chưa giết: vẫn chia thưởng theo % HP đã phá
+    pingPlayersOnSpawn: true,   // loan spawn có @role người chơi (báo toàn bộ người đăng ký)
     attackCooldownMs: 30 * 1000, // mỗi người 30s công phạt 1 lần (GĐ18)
     assaultRounds: 12,      // số hiệp TỐI ĐA mỗi đòn công phạt (đánh THEO LƯỢT)
     assaultPoolMult: 10,    // HP "đợt" boss = Công người chơi × hệ số này (đánh hết = sát thương đó trừ HP chung)

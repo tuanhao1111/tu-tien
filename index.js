@@ -18,6 +18,7 @@ const config = require('./config');
 const cult = require('./cultivation');
 const quests = require('./quests'); // dùng chung dayKey (reset trần voice theo ngày VN)
 const livepanels = require('./util/livepanels'); // panel chung auto-cập nhật + sticky (GĐ16)
+const channelroles = require('./util/channelroles'); // role mở khóa kênh theo cảnh giới (GĐ23)
 
 const client = new Client({
   intents: [
@@ -52,6 +53,12 @@ client.once(Events.ClientReady, (c) => {
 
 // --- Lệnh gạch chéo + nút bấm ---
 client.on(Events.InteractionCreate, async (interaction) => {
+  // Lazy-sync role mở kênh theo cảnh giới (bù cho người chơi cũ đã ở cảnh giới cao). Fire-and-forget.
+  if (channelroles.enabled() && interaction.member && (interaction.isChatInputCommand() || interaction.isButton())) {
+    const lp = db.getPlayer(interaction.user.id);
+    if (lp) channelroles.maybeSync(interaction, lp).catch(() => {});
+  }
+
   if (interaction.isChatInputCommand()) {
     const command = client.commands.get(interaction.commandName);
     if (!command) return;

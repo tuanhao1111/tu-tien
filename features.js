@@ -21,6 +21,7 @@ const FEATURES = [
 
   // --- Mở khóa khi lên cảnh giới (realm >= ...) ---
   { key: 'top', name: 'Bảng Xếp Hạng', emoji: '🏔️', realm: 1, status: 'live', commands: ['top'], desc: 'Phong Vân Bảng — so tài thiên hạ.' },
+  { key: 'sanyeu', name: 'Săn Yêu', emoji: '🐗', realm: 1, status: 'live', commands: ['sanyeu'], desc: 'Bãi săn yêu nhanh — kiếm linh thạch + tu vi (mở ở Luyện Khí, chưa cần môn phái).' },
 
   // --- Môn phái & combat (mở khóa ở Trúc Cơ) ---
   { key: 'monphai', name: 'Môn Phái', emoji: '🏯', realm: 2, status: 'live', commands: ['monphai'], desc: 'Gia nhập môn phái, học kỹ năng chiến đấu riêng.' },

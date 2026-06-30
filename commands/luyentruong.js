@@ -22,6 +22,7 @@ const assets = require('../assets'); // ảnh yêu thú trong trận (foe_wild/f
 const autorefresh = require('../util/autorefresh');
 const fight = require('./fight');
 const { requireUnlocked } = require('../util/feature-gate');
+const kyngoCmd = require('./kyngo'); // kỳ ngộ ập tới sau khi săn yêu (GĐ23)
 
 const stone = config.currency.emoji;
 const MAX_LOG = 14;
@@ -124,9 +125,9 @@ function startLinhDienRefresh(interaction, userId) {
 function sanYeuView(player, now) {
   const left = config.farm.sanYeu.cooldownMs - (now - (player.sanyeu_ts || 0));
   const e = new EmbedBuilder()
-    .setColor(config.colors.primary)
+    .setColor(ui.chanColor('sanYeu'))
     .setTitle('🐗 Bãi Săn Yêu Thú')
-    .setDescription('Đánh nhanh 1 yêu hoang để kiếm linh thạch + tu vi. Thua cũng không mất gì.');
+    .setDescription('Đánh nhanh 1 yêu hoang để kiếm linh thạch + tu vi. Thua cũng không mất gì.\n🎲 Đôi khi giữa bãi săn còn gặp **Kỳ Ngộ** bất ngờ!');
   const row = new ActionRowBuilder();
   if (left > 0) {
     e.addFields({ name: '⏳ Hồi sức', value: `Nghỉ thêm **${ui.dur(left)}** rồi săn tiếp. _(tự cập nhật)_` });
@@ -134,6 +135,54 @@ function sanYeuView(player, now) {
     row.addComponents(new ButtonBuilder().setCustomId('farm_sanyeu_fight').setLabel('⚔️ Săn ngay').setStyle(ButtonStyle.Primary));
   }
   return { embeds: [e], components: row.components.length ? [row] : [] };
+}
+
+// PANEL CÔNG KHAI (sticky) ở kênh Săn Yêu — banner + nút mở bãi săn riêng.
+function sanYeuPanelView() {
+  const r = cult.REALMS[config.farm.sanYeu.minRealm || 1];
+  const e = ui.panelEmbed('sanYeu', {
+    title: '🐗 Bãi Săn Yêu',
+    desc:
+      `Đạt **${r.emoji} ${r.name}** là có thể vào săn — **chưa cần môn phái**.\n\n` +
+      `🐗 Đánh nhanh 1 yêu hoang mỗi lượt, kiếm **linh thạch + tu vi** (+ cơ hội nguyên liệu). Thua không mất gì.\n` +
+      `⏱️ Cooldown **${ui.dur(config.farm.sanYeu.cooldownMs)}**/lượt _(đếm ngược tự cập nhật trong bãi săn của bạn)_.\n` +
+      `🎲 Săn yêu còn có cơ duyên **Kỳ Ngộ** bất ngờ ập tới!`,
+    footer: 'Bấm để vào bãi săn của riêng bạn.',
+  });
+  return { embeds: [e], components: [ui.row(ui.btn('panel_sanyeu', 'Vào Bãi Săn Yêu', 'success', { emoji: '🐗' }))] };
+}
+
+// Gate săn yêu: chỉ cần đạt cảnh giới (không cần môn phái). Trả true nếu BỊ KHÓA (đã reply).
+function sanYeuLocked(interaction, p) {
+  const minR = config.farm.sanYeu.minRealm || 0;
+  if ((p.realm || 0) >= minR) return false;
+  const r = cult.REALMS[minR];
+  interaction.reply({
+    content: `🔒 **Săn Yêu** mở ở **${r.emoji} ${r.name}**. Hiện **${cult.realmLabel(p.realm, p.tier)}** — tu thêm chút nữa nhé!`,
+    flags: MessageFlags.Ephemeral,
+  }).catch(() => {});
+  return true;
+}
+
+// Mở bãi săn yêu (ẩn) cho người bấm — dùng cho cả nút panel & lệnh /sanyeu.
+async function openSanYeu(interaction) {
+  const userId = interaction.user.id;
+  const p = db.getPlayer(userId);
+  if (!p) return interaction.reply({ content: 'Đạo hữu chưa nhập đạo! Tới kênh **Sơ Nhập** đăng ký đã.', flags: MessageFlags.Ephemeral });
+  if (sanYeuLocked(interaction, p)) return;
+  await interaction.reply({ ...sanYeuView(p, Date.now()), flags: MessageFlags.Ephemeral });
+  startSanYeuRefresh(interaction, userId, p);
+}
+
+// Bật đếm ngược cooldown săn yêu (tự cập nhật tới lúc hồi xong thì dừng).
+function startSanYeuRefresh(interaction, userId, p) {
+  const cd = config.farm.sanYeu.cooldownMs;
+  if (cd - (Date.now() - (p.sanyeu_ts || 0)) <= 0) return;
+  autorefresh.start(interaction, () => {
+    const np = db.getPlayer(userId); if (!np) return null;
+    const left = cd - (Date.now() - (np.sanyeu_ts || 0));
+    return { view: sanYeuView(np, Date.now()), done: left <= 0 };
+  });
 }
 
 // ---------- THÍ LUYỆN THÁP ----------
@@ -168,6 +217,7 @@ fight.registerOutcome('sanyeu', async (interaction, f) => {
     .setColor(win ? config.colors.success : config.colors.danger)
     .setTitle('🐗 Săn Yêu — Kết Thúc')
     .setDescription(`🆚 **${f.B.name}** — ${win ? `🏆 **Hạ gục sau ${f.round} hiệp!**` : `☠️ **Thất bại** sau ${f.round} hiệp (không mất gì)`}`);
+  let kyngoTriggered = false;
   if (win) {
     const p = db.getPlayer(userId);
     const loot = farm.sanYeuLoot(p.realm);
@@ -176,12 +226,17 @@ fight.registerOutcome('sanyeu', async (interaction, f) => {
     if (loot.tuVi) { tr = db.addTuVi(userId, loot.tuVi); loot.tuVi = tr.gained; }
     if (Object.keys(loot.mats).length) db.addMaterials(userId, loot.mats);
     db.addDailyProgress(userId, 'sanyeu', 1);
+    db.addStoryProgress(userId, 'sanyeu', 1); // tiến độ cốt truyện (chương Luyện Khí)
     const lootStr = [loot.stones ? `${stone} ${loot.stones}${config.currency.short}` : null, loot.tuVi ? `🌀 ${loot.tuVi} tu vi` : null, matLine(loot.mats) || null].filter(Boolean).join(' · ');
     const note = dampen.tuViNote(tr);
     e.addFields({ name: '🎁 Thu hoạch', value: `${lootStr}${note ? `\n${note}` : ''}` });
+    // Kỳ ngộ ập tới? (off-cooldown + trúng tỉ lệ) -> thêm nút mở kỳ ngộ ngay.
+    kyngoTriggered = kyngoCmd.rollTrigger(db.getPlayer(userId));
+    if (kyngoTriggered) e.addFields({ name: '🎲 Kỳ Ngộ!', value: 'Giữa bãi săn, một **cơ duyên bất ngờ** hiện ra — bấm **🎲 Xem kỳ ngộ** bên dưới!' });
   }
   e.setFooter({ text: `Cooldown săn: ${ui.dur(config.farm.sanYeu.cooldownMs)}` });
   const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('farm_sanyeu').setLabel('🐗 Săn tiếp').setStyle(ButtonStyle.Secondary));
+  if (kyngoTriggered) row.addComponents(new ButtonBuilder().setCustomId('panel_kyngo').setLabel('🎲 Xem kỳ ngộ').setStyle(ButtonStyle.Success));
   return { content: '', embeds: [e], components: [row] };
 });
 
@@ -221,6 +276,9 @@ module.exports = {
     if (!player) return;
     return interaction.reply({ ...hubView(player), flags: MessageFlags.Ephemeral });
   },
+
+  sanYeuPanelView, // panel sticky kênh Săn Yêu (dùng ở panels.js)
+  openSanYeu,      // mở bãi săn yêu (dùng ở /sanyeu)
 
   buttons: {
     // Panel Luyện Trường: mở hub.
@@ -270,28 +328,23 @@ module.exports = {
       return interaction.followUp({ content: `🧺 Thu hoạch **${res.seeds} hạt** → ${matLine(res.mats)}.`, flags: MessageFlags.Ephemeral });
     },
 
-    // --- Săn Yêu (đếm ngược cooldown TỰ CHẠY) ---
+    // --- Săn Yêu (mở ở Luyện Khí · KHÔNG cần môn phái · đếm ngược cooldown TỰ CHẠY) ---
+    // Panel CÔNG KHAI ở kênh Săn Yêu -> mở bãi săn riêng (ẩn).
+    async panel_sanyeu(interaction) { return openSanYeu(interaction); },
     async farm_sanyeu(interaction) {
       const userId = interaction.user.id;
       const p = db.getPlayer(userId);
       if (!p) return;
-      if (!p.sect || !sects.getSect(p.sect)) return needSect(interaction);
+      if (sanYeuLocked(interaction, p)) return;
       await interaction.reply({ ...sanYeuView(p, Date.now()), flags: MessageFlags.Ephemeral });
-      const cd = config.farm.sanYeu.cooldownMs;
-      if (cd - (Date.now() - (p.sanyeu_ts || 0)) > 0) {
-        autorefresh.start(interaction, () => {
-          const np = db.getPlayer(userId); if (!np) return null;
-          const left = cd - (Date.now() - (np.sanyeu_ts || 0));
-          return { view: sanYeuView(np, Date.now()), done: left <= 0 };
-        });
-      }
+      startSanYeuRefresh(interaction, userId, p);
     },
     async farm_sanyeu_fight(interaction) {
       const userId = interaction.user.id;
       autorefresh.stop(userId); // dừng đếm ngược trước khi vào trận
       const p = db.getPlayer(userId);
       if (!p) return;
-      if (!p.sect || !sects.getSect(p.sect)) return needSect(interaction);
+      if (sanYeuLocked(interaction, p)) return;
       const now = Date.now();
       const left = config.farm.sanYeu.cooldownMs - (now - (p.sanyeu_ts || 0));
       if (left > 0) return interaction.update(sanYeuView(p, now));

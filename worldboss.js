@@ -61,21 +61,34 @@ function shareFor(damage, totalDamage, pool, isTop = false) {
   };
 }
 
-// Boss còn hiệu lực? GĐ17: nếu lifetimeMs=0 thì KHÔNG hết hạn -> chỉ chết khi bị giết.
+// Boss còn hiệu lực? GĐ22: boss sống tối đa lifetimeMs (60') rồi tự rút lui.
+//  (lifetimeMs=0 -> không hết hạn, chỉ chết khi bị giết — tương thích bản cũ.)
 function isActive(row, now = Date.now()) {
   if (!row || row.dead || row.hp <= 0) return false;
   const life = WB().lifetimeMs || 0;
   if (life > 0 && row.expire_ts && row.expire_ts <= now) return false; // chỉ kiểm hạn khi bật lifetime
   return true;
 }
-// Đã tới lúc spawn boss mới? (không có boss sống + qua respawn kể từ lần chết gần nhất)
+// Mốc NGẪU NHIÊN cho boss kế: now + gap bốc trong [spawnMinGapMs, spawnMaxGapMs].
+//  Đặt 1 LẦN lúc boss biến mất rồi lưu DB (next_ts) -> không bị bốc lại mỗi tick.
+//  Thiếu cấu hình -> rơi về respawnMs (cố định) cho tương thích.
+function nextSpawnTs(now = Date.now(), rand = Math.random) {
+  const min = WB().spawnMinGapMs || 0;
+  const max = WB().spawnMaxGapMs || 0;
+  const gap = max > min ? Math.round(min + rand() * (max - min)) : (WB().respawnMs || 0);
+  return now + gap;
+}
+// Đã tới lúc spawn boss mới? (không có boss sống + đã qua mốc next_ts ngẫu nhiên)
 function shouldSpawn(row, now = Date.now()) {
   if (isActive(row, now)) return false;
-  if (!row) return true;
+  if (!row) return true;                       // chưa từng có boss -> giáng thế ngay
+  if (row.next_ts) return now >= row.next_ts;   // GĐ22: theo mốc ngẫu nhiên đã định
+  // Tương thích bản cũ (chưa có next_ts): dùng respawnMs từ lần chết.
   const since = row.died_ts || row.born_ts || 0;
   return now - since >= (WB().respawnMs || 0);
 }
 
 module.exports = {
-  BOSSES, bossInfo, bossForSpawn, bossStage, maxHp, rewardPool, shareFor, isActive, shouldSpawn,
+  BOSSES, bossInfo, bossForSpawn, bossStage, maxHp, rewardPool, shareFor,
+  isActive, shouldSpawn, nextSpawnTs,
 };

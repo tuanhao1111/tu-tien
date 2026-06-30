@@ -42,6 +42,24 @@ function eventView(ev) {
   return { embeds: [e], components: [row] };
 }
 
+// GĐ23: kỳ ngộ TỰ ẬP TỚI khi đi săn yêu / làm cốt truyện.
+//  rollTrigger: trúng cơ hội kỳ ngộ chưa? (chỉ khi KHÔNG còn cooldown kỳ ngộ).
+function rollTrigger(p, now = Date.now()) {
+  const k = config.kyngo || {};
+  if (!p || !(k.triggerChance > 0)) return false;
+  if (cdLeft(p, now) > 0) return false; // đang nghỉ kỳ ngộ -> không bật thêm
+  return Math.random() < k.triggerChance;
+}
+// Sau khi interaction ĐÃ phản hồi (update/reply rồi): nếu trúng -> gửi kỳ ngộ ẩn (followUp).
+async function maybeFollowUp(interaction, userId) {
+  try {
+    const p = db.getPlayer(userId);
+    if (!rollTrigger(p)) return false;
+    await interaction.followUp({ ...eventView(kyngo.pickEvent(p.realm)), flags: MessageFlags.Ephemeral }).catch(() => {});
+    return true;
+  } catch (_) { return false; }
+}
+
 // Mở 1 kỳ ngộ (hoặc báo cooldown).
 async function open(interaction, useUpdate) {
   const p = await requireUnlocked(interaction);
@@ -56,6 +74,8 @@ async function open(interaction, useUpdate) {
 module.exports = {
   data: new SlashCommandBuilder().setName('kyngo').setDescription('Kỳ Ngộ — gặp sự kiện phiêu lưu ngẫu nhiên, tìm cơ duyên.'),
   async execute(interaction) { return open(interaction, false); },
+  // dùng cho săn yêu / cốt truyện gọi kỳ ngộ ập tới.
+  rollTrigger, maybeFollowUp, eventView,
 
   buttons: {
     async panel_kyngo(interaction) {
@@ -81,6 +101,7 @@ module.exports = {
       const result = kyngo.rollResult(choice);
       const g = kyngo.computeGains(p, result);
       db.setKyngoTs(userId, now); // lock cooldown TRƯỚC khi cộng thưởng (idempotent với double-click)
+      db.addStoryProgress(userId, 'kyngo', 1); // tiến độ cốt truyện (chương Luyện Khí)
       const lines = [];
       if (g.tuvi > 0) { const r = db.addTuVi(userId, g.tuvi); lines.push(`🌀 **+${r.gained} tu vi**`); const note = dampen.tuViNote(r); if (note) lines.push(note); }
       if (g.stones > 0) { const r = db.addStones(userId, g.stones); lines.push(`${cur.emoji} **+${r.gained}${cur.short}**`); }

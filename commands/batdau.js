@@ -5,6 +5,7 @@ const db = require('../database');
 const config = require('../config');
 const cult = require('../cultivation');
 const { assignPlayerRole } = require('../util/playerrole');
+const channelroles = require('../util/channelroles');
 
 // Bước 1 — CHỌN GIỚI TÍNH (cố định). Hiển thị trước khi tạo nhân vật.
 function genderView(username) {
@@ -102,6 +103,7 @@ module.exports = {
       }
       db.createPlayer(interaction.user.id, interaction.user.username, gender);
       const roleAssigned = await assignPlayerRole(interaction); // nuốt lỗi nếu thiếu quyền — không chặn đăng ký
+      await channelroles.grantUpTo(interaction.member, 0).catch(() => {}); // role mở kênh theo cảnh giới (mốc realm 0)
       return interaction.update(welcome(interaction.user.username, gender, roleAssigned)).catch(() => {});
     },
 

@@ -190,9 +190,15 @@ db.exec(`
     expire_ts   INTEGER NOT NULL DEFAULT 0,
     died_ts     INTEGER NOT NULL DEFAULT 0,
     dead        INTEGER NOT NULL DEFAULT 1,   -- 1 = không có boss sống
-    distributed INTEGER NOT NULL DEFAULT 1    -- đã chia thưởng cho đợt này chưa
+    distributed INTEGER NOT NULL DEFAULT 1,   -- đã chia thưởng cho đợt này chưa
+    next_ts     INTEGER NOT NULL DEFAULT 0    -- GĐ22: mốc NGẪU NHIÊN cho boss kế (đặt khi boss biến mất)
   );
 `);
+// Migration: thêm next_ts cho bảng world_boss cũ (tránh mất dữ liệu).
+try {
+  const wbCols = db.prepare(`PRAGMA table_info(world_boss)`).all().map((c) => c.name);
+  if (!wbCols.includes('next_ts')) db.exec('ALTER TABLE world_boss ADD COLUMN next_ts INTEGER NOT NULL DEFAULT 0');
+} catch (e) { console.error('[migrate world_boss.next_ts]', e && e.message); }
 // Đóng góp sát thương mỗi người mỗi đợt spawn.
 db.exec(`
   CREATE TABLE IF NOT EXISTS world_boss_dmg (
@@ -277,8 +283,8 @@ const Q = {
     ON CONFLICT(id) DO UPDATE SET spawn_n=excluded.spawn_n, boss_key=excluded.boss_key, max_hp=excluded.max_hp,
       hp=excluded.hp, born_ts=excluded.born_ts, expire_ts=excluded.expire_ts, died_ts=0, dead=0, distributed=0`),
   wbSetHp: db.prepare('UPDATE world_boss SET hp = ? WHERE id = 1'),
-  wbKill: db.prepare('UPDATE world_boss SET hp = 0, dead = 1, died_ts = ? WHERE id = 1'),
-  wbExpire: db.prepare('UPDATE world_boss SET dead = 1, died_ts = ? WHERE id = 1'),
+  wbKill: db.prepare('UPDATE world_boss SET hp = 0, dead = 1, died_ts = ?, next_ts = ? WHERE id = 1'),
+  wbExpire: db.prepare('UPDATE world_boss SET dead = 1, died_ts = ?, next_ts = ? WHERE id = 1'),
   wbDistributed: db.prepare('UPDATE world_boss SET distributed = 1 WHERE id = 1'),
   wbDmgGet: db.prepare('SELECT * FROM world_boss_dmg WHERE spawn_n = ? AND discord_id = ?'),
   wbDmgUpsert: db.prepare(`INSERT INTO world_boss_dmg (spawn_n, discord_id, username, damage, hits, last_ts)
@@ -1254,21 +1260,24 @@ function dealBossDamage(id, username, dmg, now = Date.now()) {
   const killed = newHp <= 0;
   const tx = db.transaction(() => {
     Q.wbDmgUpsert.run(row.spawn_n, id, username, dmg, now);
-    if (killed) Q.wbKill.run(now); else Q.wbSetHp.run(newHp);
+    if (killed) Q.wbKill.run(now, worldboss.nextSpawnTs(now)); else Q.wbSetHp.run(newHp);
   });
   tx();
   return { hp: newHp, killed, row };
 }
 function bossContributions(spawnN) { return Q.wbDmgList.all(spawnN); }
 function bossDamageOf(spawnN, id) { return Q.wbDmgGet.get(spawnN, id) || null; }
-function expireWorldBoss(now = Date.now()) { Q.wbExpire.run(now); }
+function expireWorldBoss(now = Date.now()) { Q.wbExpire.run(now, worldboss.nextSpawnTs(now)); }
 // Chia thưởng cho mọi người góp sát thương (1 lần/đợt). Trả mảng tóm tắt cho loan báo.
-function distributeBossRewards(boss, spawnN) {
+//  scale (0..1): nhân quỹ thưởng — dùng khi boss HẾT GIỜ chưa bị giết (chỉ thưởng theo % HP đã phá).
+function distributeBossRewards(boss, spawnN, opts = {}) {
   const cur = getWorldBoss();
   if (!cur || cur.distributed) return null; // đã chia / không có
   const list = bossContributions(spawnN);
   const total = list.reduce((s, r) => s + r.damage, 0);
-  const pool = worldboss.rewardPool(boss);
+  const scale = Math.max(0, Math.min(1, opts.scale == null ? 1 : opts.scale));
+  const full = worldboss.rewardPool(boss);
+  const pool = { stones: Math.round(full.stones * scale), tuVi: Math.round(full.tuVi * scale) };
   const dropChance = (config.worldboss && config.worldboss.dropChance) || 0;
   const premiumTopN = (config.worldboss && config.worldboss.premiumTopN) || 0;
   const premiumTopReward = (config.worldboss && config.worldboss.premiumTopReward) || 0;

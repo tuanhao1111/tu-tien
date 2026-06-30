@@ -13,6 +13,7 @@ const config = require('../config');
 const story = require('../story');
 const cult = require('../cultivation');
 const features = require('../features');
+const kyngoCmd = require('./kyngo'); // kỳ ngộ ập tới khi tiến triển cốt truyện (GĐ23)
 
 const stoneUnit = `${config.currency.emoji}`;
 
@@ -28,6 +29,10 @@ function objectiveInfo(scene, player, row) {
       return { label: `Xuất quan **${o.goal}** lần (\`/bequan\`).`, cur: row.progress, goal: o.goal };
     case 'dotpha':
       return { label: `Đột phá thành công **${o.goal}** lần (\`/dotpha\`).`, cur: row.progress, goal: o.goal };
+    case 'sanyeu':
+      return { label: `Đi **săn yêu ${o.goal} lần** (kênh **Bãi Săn Yêu**).`, cur: row.progress, goal: o.goal };
+    case 'kyngo':
+      return { label: `Trải qua **${o.goal} kỳ ngộ** (nút 🎲 Kỳ ngộ ở panel Tu Luyện, hoặc gặp khi săn yêu).`, cur: row.progress, goal: o.goal };
     case 'reach_realm': {
       const done = player.realm >= o.realm ? 1 : 0;
       return { label: `Đạt cảnh giới **${features.realmName(o.realm)}** (hiện **${cult.realmLabel(player.realm, player.tier)}**).`, cur: done, goal: 1 };
@@ -269,8 +274,10 @@ module.exports = {
         const bits = [];
         if (res.micro.tuVi) bits.push(`🧘 ${res.micro.tuVi} tu vi`);
         if (res.micro.stones) bits.push(`${stoneUnit} ${res.micro.stones}${config.currency.short}`);
-        return interaction.followUp({ content: `✅ Xong cảnh — nhận ${bits.join(' + ')}.`, flags: MessageFlags.Ephemeral });
+        await interaction.followUp({ content: `✅ Xong cảnh — nhận ${bits.join(' + ')}.`, flags: MessageFlags.Ephemeral }).catch(() => {});
       }
+      // GĐ23: cơ hội kỳ ngộ ập tới khi tiến triển cốt truyện (off-cooldown + trúng tỉ lệ).
+      await kyngoCmd.maybeFollowUp(interaction, ownerId);
     },
 
     async story_choice(interaction) {

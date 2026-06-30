@@ -69,6 +69,62 @@ const CHAPTERS = [
     reward: { tuVi: 80, stones: 20 },
   },
 
+  // ============== CHƯƠNG (mới) — Luyện Khí: Sơ Thí Săn Yêu ==============
+  {
+    id: 'ch02b_san_yeu',
+    minRealm: 1,
+    title: 'Sơ Thí Săn Yêu',
+    npc: { name: 'Liệp Hộ Sơn Quân', emoji: '🏹' },
+    scenes: [
+      L('narrator', 'Vừa nhập Luyện Khí, đạo hữu được Thanh Vân Tử dặn: "Tu vi trên giấy chẳng bằng một trận thực chiến." Theo lời chỉ, đạo hữu tìm tới một bãi săn dưới chân núi — nơi một thợ săn yêu thú lừng danh đang mài đao.'),
+      L('npc', '"Tiểu tử Luyện Khí à? Muốn cứng cáp thì phải đổ mồ hôi nơi **Bãi Săn Yêu**." — Liệp Hộ Sơn Quân hất hàm về phía khu rừng rậm. "Yêu hoang ở đây không mạnh, nhưng đủ dạy ngươi cách ra đòn. Thắng thì có linh thạch với tu vi, thua cũng chẳng mất gì — cứ mạnh dạn!"'),
+      C('Đạo hữu đáp lời Sơn Quân?', [
+        ['Vãn bối xin thử sức!', '"Vãn bối xin thử sức ngay!" — đạo hữu siết chặt nắm tay, máu nóng dâng trào.'],
+        ['Săn yêu có cần môn phái không ạ?', '"Vãn bối chưa có môn phái, săn được không tiền bối?" — đạo hữu hơi ngần ngại.'],
+      ]),
+      L('npc', '"Chưa vào phái cũng săn được tuốt — chỉ là đánh bằng sức mình thôi! Tới kênh **Bãi Săn Yêu** (hoặc bấm 🐗 Săn Yêu) mà ra tay. Đi săn vài ba con cho ta xem bản lĩnh!"'),
+      T({ type: 'sanyeu', goal: 3 }, 'Tới **Bãi Săn Yêu** hạ **3 yêu hoang** (bấm 🐗 Săn Yêu). *(Bấm "Kiểm tra tiến độ" sau khi săn.)*', { micro: { tuVi: 40, stones: 5 } }),
+      L('npc', '"Khá lắm! Tay đao đã bớt run rồi đó." — Sơn Quân cười sảng khoái, ném cho đạo hữu một túi da đựng chiến lợi phẩm. "Cứ chăm săn, vừa luyện thân vừa kiếm linh thạch. Khi nào gặp cơ duyên kỳ lạ thì đừng bỏ lỡ nghe!"'),
+    ],
+    reward: { tuVi: 120, stones: 25 },
+  },
+
+  // ============== CHƯƠNG (mới) — Luyện Khí: Cơ Duyên Tao Ngộ ==============
+  {
+    id: 'ch02c_ky_ngo',
+    minRealm: 1,
+    title: 'Cơ Duyên Tao Ngộ',
+    npc: { name: 'Du Phương Đạo Nhân', emoji: '🎲' },
+    scenes: [
+      L('narrator', 'Trên đường săn yêu về, đạo hữu gặp một đạo nhân áo vá lang thang, tay phe phẩy quạt rách, miệng ngâm nga khúc hát không đầu không cuối — Du Phương Đạo Nhân, kẻ chu du thiên hạ săn tìm cơ duyên.'),
+      L('npc', '"Tu hành đâu chỉ có ngồi thiền với đánh đấm, tiểu hữu!" — đạo nhân cười hì hì. "Thiên địa rộng lớn, đâu đâu cũng có **kỳ ngộ** — linh chi trên vách núi, tàn quyển trong hốc cây, lão hành khất hóa tiên… Biết nắm bắt thì một bước lên mây!"'),
+      C('Đạo hữu hỏi Du Phương Đạo Nhân?', [
+        ['Làm sao gặp được kỳ ngộ?', '"Vãn bối làm sao gặp được những cơ duyên ấy?" — đạo hữu tò mò.'],
+        ['Cơ duyên có rủi ro không?', '"Những cơ duyên đó… có nguy hiểm không ạ?" — đạo hữu thận trọng.'],
+      ]),
+      L('npc', '"Cứ chịu khó bôn ba — **bấm 🎲 Kỳ Ngộ ở panel Tu Luyện**, hoặc lúc đi săn yêu cũng hay gặp! Mỗi cơ duyên là một lựa chọn: gan dạ thì lời to, mà cũng có khi xui xẻo. Cứ thử một phen cho biết!"'),
+      T({ type: 'kyngo', goal: 1 }, 'Trải qua **1 kỳ ngộ** (nút 🎲 Kỳ Ngộ ở panel Tu Luyện, hoặc gặp khi săn yêu). *(Bấm "Kiểm tra tiến độ" sau đó.)*', { micro: { tuVi: 30 } }),
+      L('npc', '"Hà hà, nếm mùi cơ duyên rồi đó! Nhớ nhé — phúc duyên dành cho kẻ chịu bước ra khỏi động phủ." — Du Phương Đạo Nhân vỗ vai đạo hữu, rồi lại nghêu ngao bỏ đi, bóng khuất sau rặng trúc.'),
+    ],
+    reward: { tuVi: 150, stones: 30 },
+  },
+
+  // ============== CHƯƠNG (mới) — Luyện Khí: Tích Lũy Căn Cơ ==============
+  {
+    id: 'ch02d_tich_luy',
+    minRealm: 1,
+    title: 'Tích Lũy Căn Cơ',
+    npc: { name: 'Thanh Vân Tử', emoji: '🧙' },
+    scenes: [
+      L('npc', '"Săn yêu, kỳ ngộ đều đã nếm qua. Nhưng muốn vào **Trúc Cơ**, căn cơ phải thật vững." — Thanh Vân Tử quay lại, ánh mắt nghiêm nghị hơn xưa. "Đừng nóng vội. Hãy bế quan tĩnh tu, để linh khí lắng đọng thành nền móng."'),
+      T({ type: 'bequan', goal: 1 }, 'Vào **bế quan một lần** rồi xuất quan (gõ `/bequan`, lát sau xuất quan).', { micro: { tuVi: 50 } }),
+      L('npc', '"Tốt. Linh khí trong người con đã thuần hơn nhiều." — lão vuốt râu. "Giờ tiếp tục vận công cho tới khi tu vi tràn trề, sẵn sàng cho cú đột phá lớn đầu đời."'),
+      T({ type: 'tuluyen', goal: 3 }, 'Vận công **3 lần** (gõ `/tuluyen`) để tích lũy căn cơ.', { micro: { tuVi: 40 } }),
+      L('npc', '"Căn cơ đã vững như bàn thạch. Chương sau, con sẽ đối mặt với **Trúc Cơ** — ải lớn đầu tiên trên đường tu. Hãy chuẩn bị tâm thế cho thật tốt!" — Thanh Vân Tử mỉm cười, ánh mắt tràn kỳ vọng.'),
+    ],
+    reward: { tuVi: 200, stones: 35 },
+  },
+
   // ============== CHƯƠNG 3 — Trúc Cơ: Lập Đạo Căn Cơ ==============
   {
     id: 'ch03_truc_co',

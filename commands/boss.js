@@ -76,14 +76,14 @@ function mainView(player) {
   const active = worldboss.isActive(row, now);
 
   if (!active) {
-    const next = row ? Math.max(0, (row.died_ts || row.expire_ts || 0) + (WB.respawnMs || 0) - now) : 0;
+    const next = row && row.next_ts ? Math.max(0, row.next_ts - now) : 0;
     const e = ui.panelEmbed(CK, {
       title: '🐲 Boss Thế Giới',
       desc:
         '🌫️ **Hiện chưa có boss nào giáng thế.**\n\n' +
-        (next > 0 ? `Boss kế tiếp ước chừng sau **${ui.dur(next)}** nữa.\n\n` : 'Boss có thể giáng thế bất cứ lúc nào…\n\n') +
-        '_Khi boss xuất hiện sẽ loan báo ở **Vọng Âm Đài**. Cả server cùng công phạt — chia thưởng theo sát thương đóng góp._',
-      footer: 'Đánh boss tốn Sinh Mệnh · hạ gục chia thưởng + rớt trang bị theo đóng góp.',
+        (next > 0 ? `Boss kế tiếp giáng thế trong khoảng **${ui.dur(next)}** nữa (giờ NGẪU NHIÊN).\n\n` : 'Boss có thể giáng thế bất cứ lúc nào…\n\n') +
+        '_Boss chỉ tồn tại **60 phút** mỗi lần. Khi xuất hiện sẽ loan báo + **@nhắc** ở **Vọng Âm Đài**. Cả server cùng công phạt — chia thưởng theo sát thương đóng góp._',
+      footer: 'Đánh boss tốn Sinh Mệnh · hạ gục (hoặc hết giờ) chia thưởng + rớt trang bị theo đóng góp.',
     });
     return { embeds: [e], components: [ui.row(ui.btn('boss:refresh', 'Làm mới', 'secondary', { emoji: '🔄' }))] };
   }
@@ -95,13 +95,15 @@ function mainView(player) {
   const myRank = mine ? (list.findIndex((r) => r.discord_id === player.discord_id) + 1) : 0;
   const cd = mine ? ui.cdLeft(mine.last_ts, WB.attackCooldownMs, now) : 0;
   const canHit = cd <= 0;
+  const expireLeft = row.expire_ts ? Math.max(0, row.expire_ts - now) : 0;
 
   const e = ui.panelEmbed(CK, {
     title: `${boss.emoji} ${boss.name} — Boss Thế Giới`,
     desc:
       `_${boss.lore || ''}_\n\n` +
-      `${ui.barLine('❤️', 'HP Boss', row.hp, row.max_hp, 18)}\n\n` +
-      `💢 Sát thương của bạn: **${ui.num(myDmg)}**${myRank ? ` _(hạng #${myRank})_` : ''}\n` +
+      `${ui.barLine('❤️', 'HP Boss', row.hp, row.max_hp, 18)}\n` +
+      (expireLeft > 0 ? `⏳ Boss tự rút lui sau: **${ui.dur(expireLeft)}**\n` : '') +
+      `\n💢 Sát thương của bạn: **${ui.num(myDmg)}**${myRank ? ` _(hạng #${myRank})_` : ''}\n` +
       `⏱️ Cooldown công phạt: **${ui.dur(WB.attackCooldownMs)}**/đòn\n\n` +
       `**🏆 Bảng Công:**\n${boardText(row.spawn_n, player.discord_id)}`,
     footer: cd > 0 ? `Hồi sức công phạt: còn ${ui.dur(cd)}` : 'Công phạt để góp sát thương · hạ gục chia thưởng theo đóng góp.',
@@ -124,14 +126,14 @@ function livePanelView() {
   const now = Date.now();
   const row = db.getWorldBoss();
   if (!worldboss.isActive(row, now)) {
-    const next = row ? Math.max(0, (row.died_ts || row.expire_ts || 0) + (WB.respawnMs || 0) - now) : 0;
+    const next = row && row.next_ts ? Math.max(0, row.next_ts - now) : 0;
     const e = ui.panelEmbed(CK, {
       title: '🐲 Boss Thế Giới',
       desc:
         '🌫️ **Hiện chưa có boss nào giáng thế.**\n\n' +
-        (next > 0 ? `Boss kế tiếp ước chừng sau **${ui.dur(next)}**.` : 'Boss có thể giáng thế bất cứ lúc nào…') +
-        '\n\n_Đạt **🟡 Kim Đan** để cùng cả server công phạt — chia thưởng theo sát thương._',
-      footer: 'Panel tự cập nhật. Khi boss xuất hiện sẽ loan ở Vọng Âm Đài.',
+        (next > 0 ? `Boss kế tiếp giáng thế trong khoảng **${ui.dur(next)}** (giờ NGẪU NHIÊN).` : 'Boss có thể giáng thế bất cứ lúc nào…') +
+        '\n\n_Boss chỉ tồn tại **60 phút** mỗi lần. Đạt **🟡 Kim Đan** để cùng cả server công phạt — chia thưởng theo sát thương._',
+      footer: 'Panel tự cập nhật. Khi boss xuất hiện sẽ loan + @nhắc ở Vọng Âm Đài.',
     });
     const files = assets.panel(e, 'bossTheGioi', 'image');
     return { embeds: [e], files, components: [ui.row(ui.btn('panel_boss', 'Vào trận công phạt', 'danger', { emoji: '🐲' }))] };
@@ -142,12 +144,14 @@ function livePanelView() {
   const top = list.length
     ? list.slice(0, 5).map((r, i) => `${medal[i]} **${r.username}** — 💢 ${ui.num(r.damage)}`).join('\n')
     : '*(chưa ai ra tay)*';
+  const expireLeft = row.expire_ts ? Math.max(0, row.expire_ts - now) : 0;
   const e = ui.panelEmbed(CK, {
     title: `${boss.emoji} ${boss.name} — Boss Thế Giới`,
     desc:
       `_${boss.lore || ''}_\n\n` +
       `${ui.barLine('❤️', 'HP', row.hp, row.max_hp, 20)}\n` +
-      `👥 **${list.length}** người tham chiến · chỉ biến mất khi bị tiêu diệt\n\n` +
+      `👥 **${list.length}** người tham chiến` +
+      (expireLeft > 0 ? ` · ⏳ tự rút lui sau **${ui.dur(expireLeft)}**` : '') + `\n\n` +
       `**🏆 Top sát thương:**\n${top}`,
     footer: 'Panel tự cập nhật ~5s. Bấm để vào trận công phạt (chia thưởng theo đóng góp).',
   });
@@ -175,24 +179,61 @@ function gateOpen(interaction) {
 function maybeSpawn(client, now = Date.now()) {
   if (!WB || !WB.enabled) return null;
   const row = db.getWorldBoss();
-  // CHỈ đánh dấu hết hạn khi BẬT lifetime (>0). GĐ17: mặc định lifetime=0 -> boss
-  //  không bao giờ hết hạn, chỉ biến mất khi bị tiêu diệt.
-  if ((WB.lifetimeMs || 0) > 0 && row && !row.dead && row.expire_ts && row.expire_ts <= now) { db.expireWorldBoss(now); }
+  // GĐ22: boss sống tối đa lifetimeMs (60') rồi TỰ RÚT LUI. Khi hết giờ mà chưa bị
+  //  giết -> vẫn chia thưởng theo % HP đã phá (nếu bật) + loan báo, rồi đánh dấu hết hạn.
+  if ((WB.lifetimeMs || 0) > 0 && row && !row.dead && row.expire_ts && row.expire_ts <= now) {
+    handleExpire(client, row, now);
+  }
   if (!worldboss.shouldSpawn(db.getWorldBoss(), now)) return null;
   const { boss, row: r } = db.spawnWorldBoss(now);
   announceSpawn(client, boss, r);
   return boss;
 }
+
+// Boss hết 60' chưa bị giết -> rút lui. Chia thưởng theo % HP đã phá (nếu có công phạt).
+function handleExpire(client, row, now) {
+  const boss = worldboss.bossInfo(row.boss_key) || { emoji: '🐲', name: 'Boss' };
+  const contributors = db.bossContributions(row.spawn_n);
+  let summary = null;
+  if (WB.expireRewardScale && contributors.length && row.max_hp > 0) {
+    const scale = Math.max(0, Math.min(1, (row.max_hp - row.hp) / row.max_hp));
+    if (scale > 0) summary = db.distributeBossRewards(boss, row.spawn_n, { scale });
+  }
+  db.expireWorldBoss(now);
+  announceExpire(client, boss, row, summary);
+}
+
+function announceExpire(client, boss, row, summary) {
+  const destroyed = row.max_hp > 0 ? Math.round((row.max_hp - row.hp) / row.max_hp * 100) : 0;
+  const top = summary ? summary.contributors.slice(0, 3) : [];
+  const medal = ['🥇', '🥈', '🥉'];
+  const e = ui.panelEmbed(CK, {
+    title: `🌫️ ${boss.emoji} ${boss.name} đã rút lui khỏi nhân gian`,
+    desc:
+      `Hết **60 phút**, ${boss.emoji} **${boss.name}** tan vào hư không — phen này chưa ai hạ được nó!\n\n` +
+      `💢 Cả server đã phá **${destroyed}%** HP của boss.\n` +
+      (summary
+        ? `_Thưởng đã chia theo % HP đã phá cho người tham chiến._\n\n**Công thần:**\n` +
+          (top.length ? top.map((c, i) => `${medal[i]} **${c.username}** — 💢 ${ui.num(c.damage)}`).join('\n') : '—')
+        : '_Không ai kịp ra tay — boss biến mất, không có thưởng._') +
+      `\n\n_Boss kế tiếp sẽ giáng thế NGẪU NHIÊN — hãy để ý loan báo!_`,
+  });
+  announce(client, e);
+}
+
 function announceSpawn(client, boss, row) {
   const e = ui.panelEmbed(CK, {
     title: `🐲 BOSS THẾ GIỚI GIÁNG THẾ — ${boss.emoji} ${boss.name}!`,
     desc:
       `_${boss.lore}_\n\n` +
-      `❤️ HP: **${ui.num(row.max_hp)}** — chỉ biến mất khi **bị tiêu diệt**!\n\n` +
-      `Toàn thể tu sĩ Kim Đan trở lên hãy tới kênh **Boss Thế Giới** cùng công phạt! Chia thưởng theo sát thương đóng góp — top đầu nhận hậu hĩnh + trang bị quý.`,
+      `❤️ HP: **${ui.num(row.max_hp)}**\n` +
+      `⏳ Boss CHỈ tồn tại **60 phút** rồi tự rút lui — tranh thủ công phạt ngay!\n\n` +
+      `Toàn thể tu sĩ Kim Đan trở lên hãy tới kênh **Boss Thế Giới** cùng công phạt! Chia thưởng theo sát thương đóng góp — top đầu nhận hậu hĩnh + trang bị quý. _(Hết giờ chưa giết: vẫn thưởng theo % HP đã phá.)_`,
   });
   const files = assets.misc(e, `boss_${boss.key}`, 'image'); // chân dung boss (banner) nếu có
-  announce(client, files.length ? { embeds: [e], files } : e);
+  const payload = files.length ? { embeds: [e], files } : { embeds: [e] };
+  // GĐ22: @role người chơi -> báo toàn bộ người đã đăng ký game.
+  announce(client, payload, { pingPlayers: !!WB.pingPlayersOnSpawn });
 }
 
 async function open(interaction) {
