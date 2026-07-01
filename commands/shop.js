@@ -20,9 +20,39 @@ const assets = require('../assets');
 const shopCard = require('../render/shopCard'); // thẻ shop kiểu RPG (kệ vật phẩm + giá)
 const petGachaCard = require('../render/petGachaCard'); // thẻ kết quả quay Chiêu Hồn
 const gachaBannerCard = require('../render/gachaBannerCard'); // thẻ banner "dàn thú có thể ra"
+const fs = require('fs');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const SUMMON_MS = 3200; // thời lượng chiếu GIF triệu hồn trước khi lộ kết quả
+const SUMMON_FALLBACK_MS = 3000; // dùng khi KHÔNG đọc được thời lượng GIF
+const SUMMON_BUFFER_MS = 600;    // đệm client tải/khởi động GIF -> xem TRỌN 1 vòng rồi mới lộ kết quả
+
+// Đọc thời lượng 1 vòng của GIF (tổng delay các frame, ms) — đi đúng cấu trúc block,
+//  KHÔNG quét byte thô (dữ liệu ảnh nén dễ dính false-positive). Cache theo path.
+const _gifDurCache = new Map();
+function gifDurationMs(file) {
+  if (_gifDurCache.has(file)) return _gifDurCache.get(file);
+  let ms = 0;
+  try {
+    const buf = fs.readFileSync(file);
+    let p = 6; // bỏ header 'GIF89a'
+    const packed = buf[p + 4]; p += 7; // Logical Screen Descriptor
+    if (packed & 0x80) p += 3 * (1 << ((packed & 0x07) + 1)); // Global Color Table
+    const skipSub = () => { while (p < buf.length) { const len = buf[p++]; if (len === 0) break; p += len; } };
+    while (p < buf.length) {
+      const b = buf[p++];
+      if (b === 0x3B) break; // trailer
+      if (b === 0x21) { // extension
+        const label = buf[p++];
+        if (label === 0xF9) { const bs = buf[p++]; ms += buf.readUInt16LE(p + 1) * 10; p += bs; p++; }
+        else skipSub();
+      } else if (b === 0x2C) { // image descriptor
+        const lp = buf[p + 8]; p += 9; if (lp & 0x80) p += 3 * (1 << ((lp & 0x07) + 1)); p++; skipSub();
+      } else break;
+    }
+  } catch (_) { ms = 0; }
+  _gifDurCache.set(file, ms);
+  return ms;
+}
 
 const CK = 'shop';
 const cur = config.currency;
@@ -250,18 +280,23 @@ function gachaBannerData() {
   };
 }
 
-// Màn triệu hồn (GIF) — chiếu trước khi lộ kết quả. Chưa có GIF -> trả null (bỏ qua).
+// Màn triệu hồn (GIF) — chiếu TRỌN 1 vòng trước khi lộ kết quả. Chưa có GIF -> null (bỏ qua).
+//  Ưu tiên GIF theo bậc (chieu_hon_summon_<tier>), lùi về GIF chung. Trả kèm waitMs =
+//  đúng thời lượng GIF (+đệm) để chờ hết hoạt ảnh mới hiện kết quả.
 function summonView(res) {
+  const s = assets.src(`chieu_hon_summon_${res.tier}`) || assets.src('chieu_hon_summon');
+  if (!s || !s.file) return null; // không có file GIF local -> bỏ animation
   const e = ui.panelEmbed(CK, {
     title: '🎰 Chiêu Hồn Đài — Đang triệu hồn…',
     desc: '🌀 _Linh khí xoáy cuộn, hồn phách ngưng tụ… một Ngự Thú sắp giáng thế!_',
     footer: 'Xin chờ trong giây lát…',
   });
-  // Ưu tiên GIF theo bậc (chieu_hon_summon_<tier>), lùi về GIF chung (chieu_hon_summon).
-  let files = assets.misc(e, `chieu_hon_summon_${res.tier}`, 'image');
-  if (!files.length) files = assets.misc(e, 'chieu_hon_summon', 'image');
-  if (!files.length) return null;
-  return { embeds: [e], components: [], files };
+  e.setImage(`attachment://${s.name}`);
+  const dur = gifDurationMs(s.file);
+  return {
+    view: { embeds: [e], components: [], files: [new AttachmentBuilder(s.file, { name: s.name })] },
+    waitMs: (dur > 0 ? dur : SUMMON_FALLBACK_MS) + SUMMON_BUFFER_MS,
+  };
 }
 
 async function chieuHonView(player) {
@@ -423,14 +458,14 @@ module.exports = {
         if (res.err === 'noyhp') return interaction.reply({ content: `👻 Thiếu Yêu Hồn Phách — cần **${res.need}**. Farm ở **Luyện Trường → 👻 Truy Tung Nhiếp Hồn**.`, flags: MessageFlags.Ephemeral });
         if (res.err === 'nopremium') return interaction.reply({ content: `😅 Thiếu Tiên Ngọc — cần ${pcur.emoji}${res.need}${pcur.short}.`, flags: MessageFlags.Ephemeral });
         if (res.err) return updCard(interaction, chieuHonView(db.getPlayer(id)));
-        // Có GIF triệu hồn -> chiếu ~3s rồi mới lộ thẻ kết quả (không có GIF thì tới thẳng kết quả).
+        // Có GIF triệu hồn -> chiếu TRỌN 1 vòng (theo thời lượng GIF) rồi mới lộ kết quả.
         const summon = summonView(res);
         if (summon) {
           if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
-          // Upload GIF có thể lỗi (quá nặng/mạng) -> nuốt lỗi rồi vẫn lộ kết quả (không kẹt).
+          // Upload GIF có thể lỗi (mạng) -> nuốt lỗi rồi vẫn lộ kết quả (không kẹt).
           try {
-            await interaction.editReply({ ...summon, attachments: [] });
-            await sleep(SUMMON_MS);
+            await interaction.editReply({ ...summon.view, attachments: [] });
+            await sleep(summon.waitMs);
           } catch (err) { console.error('[summon gif] fail:', err && err.message); }
           return interaction.editReply({ ...(await gachaResultView(res)), attachments: [] });
         }
