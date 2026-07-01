@@ -63,8 +63,7 @@ function hubView(player) {
       'Chọn nơi rèn luyện & farm tài nguyên:\n\n' +
       '🗼 **Thí Luyện Tháp** — leo tháp vô tận, thắng thì lên tầng, thưởng càng cao.\n' +
       '🗺️ **Bí Cảnh** — thám hiểm theo lượt (gõ `/bicanh`).\n' +
-      `👻 **Truy Tung Nhiếp Hồn** — farm 👻 Yêu Hồn Phách + 🍖 thức ăn nuôi **Ngự Thú** (mở ở **${(cult.REALMS[config.farm.sanHon.minRealm || 4] || {}).name || 'Nguyên Anh'}**).\n\n` +
-      '🐗 **Săn Yêu** nay có **kênh Bãi Săn Yêu riêng** (mở sớm từ Luyện Khí) — qua đó săn nhé.',
+      `👻 **Truy Tung Nhiếp Hồn** — farm 👻 Yêu Hồn Phách + 🍖 thức ăn nuôi **Ngự Thú** (mở ở **${(cult.REALMS[config.farm.sanHon.minRealm || 4] || {}).name || 'Nguyên Anh'}**).`,
     )
     .setFooter({ text: `🏅 Tháp: tầng cao nhất ${player.thap_best || 0}` });
   const row = new ActionRowBuilder().addComponents(

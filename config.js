@@ -86,10 +86,7 @@ module.exports = {
       { realm: 1, name: 'Luyện Khí Tu Sĩ',  channelKeys: ['sanYeu', 'bangXepHang'] },
       { realm: 2, name: 'Trúc Cơ Tu Sĩ',    channelKeys: ['monPhai', 'dauDai'] }, // GĐ24: Đấu Pháp về Trúc Cơ
       { realm: 3, name: 'Kim Đan Chân Nhân', channelKeys: ['luyenTruong', 'bossTheGioi', 'toDoi', 'loRen'] },
-      // GĐ24: hướng chơi mới theo cảnh giới cao.
-      { realm: 4, name: 'Nguyên Anh Lão Tổ', channelKeys: ['nguThu'] },    // 🐉 Ngự Thú
-      { realm: 5, name: 'Hóa Thần Chân Quân', channelKeys: ['thanThong'] }, // 👁️ Thần Thông
-      { realm: 6, name: 'Luyện Hư Đại Năng',  channelKeys: ['duTien'] },   // 🧭 Du Tiên (Nguyên Thần Xuất Khiếu)
+      // GĐ24 hướng chơi cao cấp (Ngự Thú · Thần Thông · Du Tiên) KHÔNG còn kênh riêng — quản lý trong Hồ Sơ.
     ],
     // Kênh LUÔN mở cho mọi người — /setup gỡ lệnh ẩn nếu trước đó lỡ ẩn (vd shop).
     openChannels: ['shop'],

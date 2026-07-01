@@ -171,6 +171,10 @@ function profileComponents(p) {
   if ((p.realm || 0) >= ((config.thanthong && config.thanthong.minRealm) || 5)) {
     opts.push({ label: 'Thần Thông', description: 'Tu Nguyên Thần & vận Thần Thông (PvE + PvP)', emoji: '👁️', value: 'thanthong' });
   }
+  // Du Tiên: Nguyên Thần xuất khiếu đi lịch luyện idle ngay trong Hồ Sơ (mở ở Luyện Hư).
+  if ((p.realm || 0) >= ((config.dutien && config.dutien.minRealm) || 6)) {
+    opts.push({ label: 'Du Tiên', description: 'Nguyên Thần xuất khiếu đi lịch luyện (idle/offline)', emoji: '🧭', value: 'dutien' });
+  }
   if (health.enabled()) {
     const vit = db.getVit(p);
     if (!vit.full) {
@@ -579,7 +583,7 @@ module.exports = {
         if (!p) return interaction.reply({ content: 'Đạo hữu chưa nhập đạo!', flags: MessageFlags.Ephemeral });
         return interaction.reply({ ...achievementsView(p), flags: MessageFlags.Ephemeral });
       }
-      const route = { respec: 'attr_respec', skill: 'skill_open', trangbi: 'panel_trangbi', bag: 'bag_open', heal: 'heal_rest', nguthu: 'panel_nguthu', thanthong: 'panel_thanthong' }[v];
+      const route = { respec: 'attr_respec', skill: 'skill_open', trangbi: 'panel_trangbi', bag: 'bag_open', heal: 'heal_rest', nguthu: 'panel_nguthu', thanthong: 'panel_thanthong', dutien: 'panel_dutien' }[v];
       const h = route && interaction.client.buttons.get(route);
       if (h) return h(interaction);
       return interaction.deferUpdate().catch(() => {});

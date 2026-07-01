@@ -109,7 +109,7 @@ const SECTIONS = [
       `Đạt **${cult.REALMS[(config.pet && config.pet.minRealm) || 4].emoji} ${cult.REALMS[(config.pet && config.pet.minRealm) || 4].name}** → mở **\`/nguthu\`** (hoặc **Hồ Sơ → 🐉 Ngự Thú**).\n\n` +
       '🎰 **Bắt thú ở Chiêu Hồn Đài** (kênh **Shop**): quay bằng **LT + 👻 Yêu Hồn Phách** _(không pity)_ hoặc **🔮 Tiên Ngọc** _(tốn hơn, có pity)_. Tỉ lệ 🟡 **Thần Thú** cực thấp — trùng thú trả về 👻 Yêu Hồn Phách; hoặc **mua thẳng thú** (giá cao).\n' +
       '👻 **Yêu Hồn Phách** farm ở **Luyện Trường → Truy Tung Nhiếp Hồn**.\n' +
-      `🐾 Có thú rồi → **trang bị 1 con** (Ngự Thú Viên / Hồ Sơ) → **cho ăn** 🍖 Yêu Thú Lương + 👻 để tích EXP → **đột phá cấp** (có **tỉ lệ trượt**, dùng 🪬 **Ngự Thú Phù** cho chắc). **Tiến hóa hình** ở mốc cấp, tối đa cấp **${(config.pet && config.pet.maxLevel) || 15}**.\n` +
+      `🐾 Có thú rồi → **trang bị 1 con** (**Hồ Sơ → ⚙️ → 🐉 Ngự Thú**) → **cho ăn** 🍖 Yêu Thú Lương + 👻 để tích EXP → **đột phá cấp** (có **tỉ lệ trượt**, dùng 🪬 **Ngự Thú Phù** cho chắc). **Tiến hóa hình** ở mốc cấp, tối đa cấp **${(config.pet && config.pet.maxLevel) || 15}**.\n` +
       '⚔️ Con đang theo **cộng chỉ số phẳng** (❤️ Sinh Lực · ⚔️ Công · 🛡️ Phòng · 🌀 Tốc) + thỉnh thoảng **tung đòn phụ** trong trận.\n' +
       `🎯 Dùng được **cả PvE** (bí cảnh/săn yêu/tháp/boss/phó bản/đấu tập) **lẫn Đấu Pháp (PvP)** — ở PvP **cả hai đấu thủ** đều mang thú của mình (đối xứng).\n\n` +
       `Có **${petbeasts.BEASTS.length} loại thú** (mở dần theo cảnh giới), mỗi con một lối: trâu bò, bạo lực, tốc độ… Cấp tối đa **${(config.pet && config.pet.maxLevel) || 10}**.`,
@@ -118,7 +118,7 @@ const SECTIONS = [
     id: 'thanthong', emoji: '👁️', label: 'Thần Thông (Nguyên Thần)',
     title: '👁️ Thần Thông — Nhánh Tu Nguyên Thần',
     body:
-      `Đạt **${cult.REALMS[(config.thanthong && config.thanthong.minRealm) || 5].emoji} ${cult.REALMS[(config.thanthong && config.thanthong.minRealm) || 5].name}** → mở **\`/thanthong\`** (kênh **Nguyên Thần Điện**, hoặc **Hồ Sơ → 👁️ Thần Thông**).\n\n` +
+      `Đạt **${cult.REALMS[(config.thanthong && config.thanthong.minRealm) || 5].emoji} ${cult.REALMS[(config.thanthong && config.thanthong.minRealm) || 5].name}** → quản lý ở **Hồ Sơ → ⚙️ → 👁️ Thần Thông** (hoặc lệnh **\`/thanthong\`**).\n\n` +
       `🧠 **Luyện Nguyên Thần** lên cấp (tốn linh thạch + nguyên liệu) — mỗi cấp mở thêm **1 Thần Thông** (tối đa cấp **${(config.thanthong && config.thanthong.maxLevel) || 8}**).\n` +
       `🌌 **Vận Thần Thông** (tối đa **${(config.thanthong && config.thanthong.slotsMax) || 3} ô** theo cấp): mỗi cái cộng **chỉ số phẳng** (bạo/công/né/phòng/sinh lực…).\n` +
       `🎯 Thần Thông áp **CẢ PvE LẪN Đấu Pháp (PvP)** — đối xứng theo mức đầu tư Nguyên Thần của mỗi người.\n\n` +
@@ -128,7 +128,7 @@ const SECTIONS = [
     id: 'dutien', emoji: '🧭', label: 'Du Tiên (Nguyên Thần)',
     title: '🧭 Du Tiên — Nguyên Thần Xuất Khiếu (idle)',
     body:
-      `Đạt **${cult.REALMS[(config.dutien && config.dutien.minRealm) || 6].emoji} ${cult.REALMS[(config.dutien && config.dutien.minRealm) || 6].name}** → mở **\`/dutien\`** (kênh **Du Tiên Đường** riêng).\n\n` +
+      `Đạt **${cult.REALMS[(config.dutien && config.dutien.minRealm) || 6].emoji} ${cult.REALMS[(config.dutien && config.dutien.minRealm) || 6].name}** → quản lý ở **Hồ Sơ → ⚙️ → 🧭 Du Tiên** (hoặc lệnh **\`/dutien\`**).\n\n` +
       'Nguyên Thần **rời thân** đi lịch luyện vùng xa — đây là vòng chơi **IDLE/offline**, khác hẳn combat:\n' +
       '🪷 Chọn **điểm đến** (mở dần theo cảnh giới, dài **2h / 4h / 8h**) → Nguyên Thần lên đường (đếm ngược **tự cập nhật**, **offline vẫn chạy**) → khi về bấm **Thu cơ duyên**.\n' +
       '🎁 Mỗi chuyến: **nguyên liệu hiếm + linh thạch + tu vi + cơ hội rớt trang bị & 🔮 Tiên Ngọc** (xa hơn = hậu hơn). Mỗi lúc **chỉ 1 chuyến**.\n\n' +

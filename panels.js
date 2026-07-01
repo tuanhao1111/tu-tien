@@ -94,9 +94,10 @@ function hoSo() {
   const e = ui.panelEmbed('hoSo', {
     title: '📜 Hồ Sơ Nhân Vật',
     desc:
-      'Xem mọi thứ về đạo hữu: cảnh giới · chỉ số chiến đấu · thuộc tính · trang bị · kỹ năng · **Ngự Thú & Thần Thông** (hiện trên thẻ).\n\n' +
+      'Xem mọi thứ về đạo hữu: cảnh giới · chỉ số chiến đấu · thuộc tính · trang bị · kỹ năng · **Ngự Thú · Thần Thông · Du Tiên** (hiện trên thẻ).\n\n' +
       '▸ Cộng 🧬 **điểm thuộc tính** (nhận khi đột phá) · nâng 🎴 **chiêu** (nhận khi độ kiếp).\n' +
-      '▸ ⚙️ Menu chức năng: 🛡️ Trang bị · 🎒 Túi đồ · 🏷️ Danh hiệu · 🏆 Thành tựu · 🐉 **Ngự Thú** · 👁️ **Thần Thông** · 📖 Cẩm nang.',
+      '▸ ⚙️ Menu chức năng: 🛡️ Trang bị · 🎒 Túi đồ · 🏷️ Danh hiệu · 🏆 Thành tựu · 🐉 **Ngự Thú** · 👁️ **Thần Thông** · 🧭 **Du Tiên** · 📖 Cẩm nang.\n' +
+      '_(Ngự Thú/Thần Thông/Du Tiên mở dần theo cảnh giới — hiện trong menu khi đủ điều kiện.)_',
     footer: 'Bấm để mở hồ sơ riêng — hoặc đọc Cẩm Nang hướng dẫn đầy đủ.',
   });
   return { embeds: [e], components: [ui.row(
@@ -130,20 +131,8 @@ function sanYeu() {
   return require('./commands/luyentruong').sanYeuPanelView();
 }
 
-// 🧭 Du Tiên Đường — Nguyên Thần Xuất Khiếu (mở ở Luyện Hư), panel sticky.
-function duTien() {
-  return require('./commands/dutien').panelView();
-}
-
-// 🐉 Ngự Thú Viên — bạn chiến PvE (mở ở Nguyên Anh), panel sticky.
-function nguThu() {
-  return require('./commands/nguthu').panelView();
-}
-
-// 👁️ Nguyên Thần Điện — Thần Thông (mở ở Hóa Thần), panel sticky.
-function thanThong() {
-  return require('./commands/thanthong').panelView();
-}
+// (Ngự Thú · Thần Thông · Du Tiên KHÔNG còn kênh riêng — quản lý ngay trong
+//  **panel Hồ Sơ** → menu ⚙️ (🐉 Ngự Thú · 👁️ Thần Thông · 🧭 Du Tiên).)
 
 // ⚔️ Đấu Pháp Đài — bảng xếp hạng LIVE + khiêu chiến CÔNG KHAI (sticky).
 function dauDai() {
@@ -219,9 +208,6 @@ const PANELS = {
   hoSo:        { key: 'hoSo',        name: 'Hồ Sơ',          build: hoSo },
   luyenTruong: { key: 'luyenTruong', name: 'Luyện Trường',   build: luyenTruong },
   sanYeu:      { key: 'sanYeu',      name: 'Bãi Săn Yêu',    build: sanYeu },
-  nguThu:      { key: 'nguThu',      name: 'Ngự Thú Viên',   build: nguThu },
-  thanThong:   { key: 'thanThong',   name: 'Nguyên Thần Điện', build: thanThong },
-  duTien:      { key: 'duTien',      name: 'Du Tiên Đường',  build: duTien },
   dauDai:      { key: 'dauDai',      name: 'Đấu Pháp Đài',   build: dauDai },
   bossTheGioi: { key: 'bossTheGioi', name: 'Boss Thế Giới',  build: bossTheGioi },
   toDoi:       { key: 'toDoi',       name: 'Phó Bản Tổ Đội', build: toDoi },
@@ -249,7 +235,7 @@ for (const [pk, meta] of Object.entries(PANELS)) {
 //  Panel "động" (boss/đấu pháp/BXH) tự đăng ký live ở command tương ứng. Ở đây chỉ
 //  đăng ký các panel TĨNH cần sticky để không bị tin nhắn người chơi đẩy trôi.
 const livepanels = require('./util/livepanels');
-for (const key of ['luyenTruong', 'tuLuyen', 'monPhai', 'shop', 'nhiemVu', 'toDoi', 'loRen', 'sanYeu', 'duTien', 'nguThu', 'thanThong']) {
+for (const key of ['luyenTruong', 'tuLuyen', 'monPhai', 'shop', 'nhiemVu', 'toDoi', 'loRen', 'sanYeu']) {
   if (PANELS[key]) livepanels.register(key, PANELS[key].build, { sticky: true, stickyOnly: true });
 }
 

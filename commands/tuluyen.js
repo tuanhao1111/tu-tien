@@ -121,12 +121,11 @@ function tuLuyenView(p, username, now) {
     .setDescription(
       `${tuViLine}\n\n` +
       `🧘 **Vận Công** — chọn **mốc thời gian** bên dưới để nhập định, nhận **~${config.cultivate.ratePerMin} tu vi/phút** (tính cả khi offline; thu sớm vẫn nhận một phần).\n\n` +
-      '**Cách tu hành khác** _(nút bên dưới):_\n' +
-      `🎙️ Voice — ngồi kênh thoại ≥${v.minCompany || 2} người tích **${v.ratePerMin || 3}/phút**　·　🚪 Bế quan — tích lâu dài kể cả offline\n` +
-      '💊 Luyện đan — chế đan dược (Kim Đan)\n\n' +
+      `🎙️ **Voice** — ngồi kênh thoại ≥${v.minCompany || 2} người tích **${v.ratePerMin || 3}/phút** (nút bên dưới).\n` +
+      '_🚪 Bế quan · 💊 Luyện đan có nút riêng ngay ở **panel Tu Luyện** phía ngoài._\n\n' +
       '🎲 _Trong lúc tu luyện, đôi khi **Kỳ Ngộ** bất ngờ tự ập tới — cơ duyên không cầu mà tới._',
     )
-    .setFooter({ text: 'Bấm số phút để vận công · các nút dưới cho cách tu hành khác.' });
+    .setFooter({ text: 'Bấm số phút để vận công · nút Voice cho chế độ tu theo thoại.' });
 
   // Hàng 1: MỐC THỜI GIAN vận công (hành động chính).
   const durRow = new ActionRowBuilder();
@@ -135,11 +134,9 @@ function tuLuyenView(p, username, now) {
       new ButtonBuilder().setCustomId(`cultivate_start:${min}`).setLabel(`${min} phút`).setStyle(ButtonStyle.Primary),
     );
   }
-  // Hàng 2: cách tu hành khác (đã BỎ Rèn khí — Lò Rèn có kênh/panel riêng).
+  // Hàng 2: chỉ còn Voice — Bế quan & Luyện đan đã có nút ở panel Tu Luyện ngoài.
   const actRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId('cultivate_voice_on').setLabel('Voice').setStyle(ButtonStyle.Secondary).setEmoji('🎙️'),
-    new ButtonBuilder().setCustomId('panel_seclude').setLabel('Bế quan').setStyle(ButtonStyle.Secondary).setEmoji('🚪'),
-    new ButtonBuilder().setCustomId('panel_luyendan').setLabel('Luyện đan').setStyle(ButtonStyle.Success).setEmoji('💊'),
   );
   return { embeds: [e], components: [durRow, actRow] };
 }
