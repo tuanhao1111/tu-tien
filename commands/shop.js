@@ -19,6 +19,10 @@ const ui = require('../util/ui');
 const assets = require('../assets');
 const shopCard = require('../render/shopCard'); // thẻ shop kiểu RPG (kệ vật phẩm + giá)
 const petGachaCard = require('../render/petGachaCard'); // thẻ kết quả quay Chiêu Hồn
+const gachaBannerCard = require('../render/gachaBannerCard'); // thẻ banner "dàn thú có thể ra"
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const SUMMON_MS = 3200; // thời lượng chiếu GIF triệu hồn trước khi lộ kết quả
 
 const CK = 'shop';
 const cur = config.currency;
@@ -226,27 +230,68 @@ function buy(userId, id, qty) {
 // =====================================================================
 const GACHA_MIN_REALM = (config.pet && config.pet.minRealm) || 4;
 
-function chieuHonView(player) {
+// DATA THUẦN cho thẻ banner: 4 bậc × dàn thú + tỉ lệ (thường/cao cấp).
+function gachaBannerData() {
+  const g = (config.pet && config.pet.gacha) || {};
+  const rl = g.ratesLT || {}, rp = g.ratesPremium || {};
+  const pct = (x) => (Math.round((x || 0) * 1000) / 10).toString();
+  return {
+    tiers: petbeasts.TIER_ORDER.map((t) => {
+      const ti = petbeasts.tierInfo(t);
+      return {
+        name: ti.name, emoji: ti.emoji,
+        color: '#' + ti.color.toString(16).padStart(6, '0'),
+        rateLt: pct(rl[t]), ratePremium: pct(rp[t]),
+        pets: petbeasts.beastsByTier(t).map((b) => ({
+          icon: assets.dataUri(petbeasts.imageKey(b.key, 1)), emoji: b.emoji, name: b.name,
+        })),
+      };
+    }),
+  };
+}
+
+// Màn triệu hồn (GIF) — chiếu trước khi lộ kết quả. Chưa có GIF -> trả null (bỏ qua).
+function summonView(res) {
+  const e = ui.panelEmbed(CK, {
+    title: '🎰 Chiêu Hồn Đài — Đang triệu hồn…',
+    desc: '🌀 _Linh khí xoáy cuộn, hồn phách ngưng tụ… một Ngự Thú sắp giáng thế!_',
+    footer: 'Xin chờ trong giây lát…',
+  });
+  // Ưu tiên GIF theo bậc (chieu_hon_summon_<tier>), lùi về GIF chung (chieu_hon_summon).
+  let files = assets.misc(e, `chieu_hon_summon_${res.tier}`, 'image');
+  if (!files.length) files = assets.misc(e, 'chieu_hon_summon', 'image');
+  if (!files.length) return null;
+  return { embeds: [e], components: [], files };
+}
+
+async function chieuHonView(player) {
   const g = (config.pet && config.pet.gacha) || {};
   const yhp = db.getMaterials(player).yeu_hon_phach || 0;
   const pity = player.pet_pity || 0;
-  const tierStr = petbeasts.TIER_ORDER.map((t) => { const ti = petbeasts.tierInfo(t); return `${ti.emoji}${ti.name}`; }).join(' · ');
   const e = ui.panelEmbed(CK, {
     title: '🎰 Chiêu Hồn Đài — Bắt Ngự Thú',
     desc:
-      `Triệu hồn yêu thú làm **bạn chiến**! Bậc: ${tierStr} _(🟡 Thần cực hiếm)_.\n\n` +
+      `Triệu hồn yêu thú làm **bạn chiến**! Dàn thú & tỉ lệ xem ở thẻ trên _(🟡 Thần cực hiếm)_.\n\n` +
       `🌀 **Quay thường** — ${cur.emoji}${ui.num(g.ltStones)}${cur.short} + 👻${g.ltYhp} Yêu Hồn Phách _(KHÔNG pity)_\n` +
       `🔮 **Quay cao cấp** — ${pcur.emoji}${g.premiumTienngoc}${pcur.short} _(pity **${pity}/${g.pityPremium}** — đủ là CHẮC CHẮN 🟡 Thần)_\n\n` +
       `Túi: ${cur.emoji}**${ui.num(player.stones)}** · 👻**${yhp}** · ${pcur.emoji}**${player.premium || 0}**\n\n` +
       `_Trùng thú → trả về 👻 Yêu Hồn Phách. Tỉ lệ Thần cực thấp — chăm cày hoặc **mua thẳng** thú (giá cao)._`,
     footer: 'Yêu Hồn Phách farm ở Luyện Trường → Truy Tung Nhiếp Hồn.',
   });
-  return { embeds: [e], components: [ui.row(
+  const comps = [ui.row(
     ui.btn('gacha:roll:lt', 'Quay thường', 'success', { emoji: '🌀' }),
     ui.btn('gacha:roll:premium', 'Quay cao cấp', 'primary', { emoji: '🔮' }),
     ui.btn('gacha:buy', 'Mua thú thẳng', 'secondary', { emoji: '🛒' }),
     ui.btn('gacha:back', 'Về quầy', 'secondary', { emoji: '◀️' }),
-  )] };
+  )];
+  try {
+    const buf = await gachaBannerCard.render(gachaBannerData());
+    e.setImage('attachment://chieuhon.png');
+    return { embeds: [e], components: comps, files: [new AttachmentBuilder(buf, { name: 'chieuhon.png' })] };
+  } catch (err) {
+    console.error('[gachaBannerCard] render fail:', err && err.message);
+    return { embeds: [e], components: comps };
+  }
 }
 
 async function gachaResultView(res) {
@@ -323,7 +368,8 @@ module.exports = {
         const r = cult.REALMS[GACHA_MIN_REALM];
         return interaction.reply({ content: `🔒 **Chiêu Hồn Đài** mở ở **${r.emoji} ${r.name}** (cùng Ngự Thú).`, flags: MessageFlags.Ephemeral });
       }
-      return interaction.reply({ ...chieuHonView(p), flags: MessageFlags.Ephemeral });
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      return interaction.editReply(await chieuHonView(p));
     },
     async shop(interaction) {
       const parts = interaction.customId.split(':');
@@ -358,7 +404,7 @@ module.exports = {
       }
       const upd = (v) => interaction.update({ ...v, attachments: [] });
 
-      if (action === 'open') return upd(chieuHonView(p));
+      if (action === 'open') return updCard(interaction, chieuHonView(p));
       if (action === 'back') return updCard(interaction, mainView(p));
       if (action === 'buy') return upd(petBuyView(p));
 
@@ -376,7 +422,18 @@ module.exports = {
         if (res.err === 'nostones') return interaction.reply({ content: `😅 Thiếu linh thạch — cần ${cur.emoji}${ui.num(res.need)}${cur.short}.`, flags: MessageFlags.Ephemeral });
         if (res.err === 'noyhp') return interaction.reply({ content: `👻 Thiếu Yêu Hồn Phách — cần **${res.need}**. Farm ở **Luyện Trường → 👻 Truy Tung Nhiếp Hồn**.`, flags: MessageFlags.Ephemeral });
         if (res.err === 'nopremium') return interaction.reply({ content: `😅 Thiếu Tiên Ngọc — cần ${pcur.emoji}${res.need}${pcur.short}.`, flags: MessageFlags.Ephemeral });
-        if (res.err) return upd(chieuHonView(db.getPlayer(id)));
+        if (res.err) return updCard(interaction, chieuHonView(db.getPlayer(id)));
+        // Có GIF triệu hồn -> chiếu ~3s rồi mới lộ thẻ kết quả (không có GIF thì tới thẳng kết quả).
+        const summon = summonView(res);
+        if (summon) {
+          if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
+          // Upload GIF có thể lỗi (quá nặng/mạng) -> nuốt lỗi rồi vẫn lộ kết quả (không kẹt).
+          try {
+            await interaction.editReply({ ...summon, attachments: [] });
+            await sleep(SUMMON_MS);
+          } catch (err) { console.error('[summon gif] fail:', err && err.message); }
+          return interaction.editReply({ ...(await gachaResultView(res)), attachments: [] });
+        }
         return updCard(interaction, gachaResultView(res));
       }
     },
