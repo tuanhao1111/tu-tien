@@ -98,6 +98,8 @@ function build(name, realm, tier, sectId, equipped, opts = {}) {
     cd: {},
     actives,
     passiveName: passive ? passive.name : null,
+    // NGỰ THÚ (chỉ gắn ở build PvE): { power, chance, name, emoji } -> đòn phụ cuối vòng.
+    pet: opts.pet || null,
   };
 }
 
@@ -199,6 +201,17 @@ function strike(attacker, target, power, opt, log) {
   return dmg;
 }
 
+// ĐÒN PHỤ NGỰ THÚ: nếu `actor` có .pet, cơ hội tung 1 đòn thú phụ trợ vào `foe`.
+//  Gọi cho CẢ HAI phía (PvE: chỉ người chơi có .pet; PvP: cả hai đấu thủ -> đối xứng).
+function petStrike(actor, foe, log) {
+  const p = actor && actor.pet;
+  if (!p || actor.hp <= 0 || foe.hp <= 0) return;
+  if (Math.random() >= (p.chance || 0)) return;
+  log.push(`${p.emoji || '🐾'} **${p.name}** gầm lên, tung một đòn phụ trợ cho ${actor.name}!`);
+  strike(actor, foe, p.power || 0.5, {}, log);
+  if (foe.hp <= 0) log.push(`💀 ${foe.name} gục ngã!`);
+}
+
 // Thực thi hành động (skill hoặc đánh thường).
 function doAction(actor, target, skill, log) {
   if (!skill) {
@@ -287,6 +300,10 @@ function resolve(A, B, opts = {}) {
       strike(fast, slow, extraPower, {}, log);
       if (slow.hp <= 0) log.push(`💀 ${slow.name} gục ngã!`);
     }
+
+    petStrike(A, B, log); // ĐÒN PHỤ NGỰ THÚ — đối xứng cả hai phía (PvE: chỉ A; PvP: cả hai)
+    petStrike(B, A, log);
+    if (A.hp <= 0 || B.hp <= 0) break;
   }
 
   let winner;
@@ -355,6 +372,9 @@ function stepRound(fight, playerSkillId) {
     strike(fast, slow, extraPower, {}, fight.log);
     if (slow.hp <= 0) fight.log.push(`💀 ${slow.name} gục ngã!`);
   }
+
+  petStrike(A, B, fight.log); // ĐÒN PHỤ NGỰ THÚ — đối xứng cả hai phía (PvE: chỉ A; PvP: cả hai)
+  petStrike(B, A, fight.log);
 
   if (A.hp <= 0 || B.hp <= 0 || fight.round >= fight.maxRounds) {
     fight.over = true;

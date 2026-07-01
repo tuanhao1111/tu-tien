@@ -32,6 +32,8 @@ const PREMIUM = [
     desc: 'Khi RÈN thất bại sẽ KHÔNG bị tụt cấp/tụt bậc (vẫn mất tài nguyên). Chỉ tốn khi thực sự cứu.' },
   { id: 'charm_thienmenh', cat: 'charm', charmId: 'thien_menh', emoji: '📜', name: 'Thiên Mệnh Phù (×3)', price: 6, qty: 3,
     desc: 'Mỗi viên +15% tỉ lệ thành công cho 1 lần rèn (cường hóa / nâng bậc / chế tạo).' },
+  { id: 'charm_nguthu', cat: 'petcharm', emoji: '🪬', name: 'Ngự Thú Phù (×3)', price: 6, qty: 3,
+    desc: 'Khi ĐỘT PHÁ cấp Ngự Thú: +tỉ lệ thành công & KHÔNG mất kinh nghiệm nếu trượt. Tốn 1 viên mỗi lần dùng.' },
 
   // --- Danh hiệu (cosmetic, mua 1 lần) ---
   { id: 'title_kiem_khach', cat: 'title', titleId: 'kiem_khach', emoji: '⚔️', name: 'Danh hiệu: Nhất Kiếm Khách', price: 15,

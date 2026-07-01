@@ -113,6 +113,7 @@ function runOpts(run) {
     skillLevels: run.skillLevels || {},
     stagesSinceJoin: Math.max(0, cult.globalStage(run.realm, run.tier) - (run.joinStage || 0)),
     gearBonus: run.gearBonus || {},
+    pet: run.pet || null, // đòn phụ ngự thú (PvE) — chốt lúc vào lượt
   };
 }
 
@@ -292,7 +293,8 @@ module.exports = {
         const equipped = db.getEquipped(player);
         const run = {
           zoneId, realm: player.realm, tier: player.tier, sect: player.sect, equipped,
-          attrs: db.getAttributes(player), skillLevels: db.getSkillLevels(player), joinStage: player.sect_join_stage || 0, gearBonus: db.combatGearBonus(player),
+          attrs: db.getAttributes(player), skillLevels: db.getSkillLevels(player), joinStage: player.sect_join_stage || 0,
+          gearBonus: db.combatGearBonus(player, true), pet: db.petStrike(player), // PvE -> gộp Ngự Thú + đòn phụ
           maxHp: 0, hp: 0, floor: 0, loot: emptyLoot(), ts: now,
         };
         const tmp = combat.build(interaction.user.username, run.realm, run.tier, run.sect, equipped, runOpts(run));

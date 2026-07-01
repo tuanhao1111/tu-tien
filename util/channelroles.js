@@ -12,6 +12,7 @@
 //
 //  Mọi lỗi NUỐT ÊM — không bao giờ chặn đăng ký/đột phá/đặt panel.
 // =====================================================================
+const { PermissionFlagsBits } = require('discord.js');
 const config = require('../config');
 
 const CR = () => config.channelRoles || {};
@@ -84,9 +85,20 @@ async function applyChannelPermissions(client) {
   const guild = await resolveGuild(client);
   if (!guild) { out.push('⚠️ Role kênh: không tìm thấy guild để đặt quyền.'); return out; }
 
+  // Kiểm tra quyền bot TRƯỚC — nguyên nhân #1 khiến kênh không ẩn/role không cấp được.
+  const me = guild.members.me || (await guild.members.fetchMe().catch(() => null));
+  if (me) {
+    if (!me.permissions.has(PermissionFlagsBits.ManageChannels)) out.push('❗ Bot **thiếu quyền Manage Channels** — KHÔNG ẩn/hiện kênh được. Hãy cấp quyền rồi chạy lại `/setup`.');
+    if (!me.permissions.has(PermissionFlagsBits.ManageRoles)) out.push('❗ Bot **thiếu quyền Manage Roles** — KHÔNG tạo/cấp role được. Hãy cấp quyền rồi chạy lại `/setup`.');
+  }
+
   for (const t of thresholds()) {
     const role = await getOrCreateRole(guild, t.name);
     if (!role) { out.push(`⚠️ Role kênh: không tạo được role **${t.name}** (thiếu quyền Manage Roles?).`); continue; }
+    // Role bot phải nằm TRÊN role game thì bot mới cấp được role đó cho người chơi.
+    if (me && me.roles.highest && me.roles.highest.comparePositionTo(role) <= 0) {
+      out.push(`❗ Role **${t.name}** đang nằm TRÊN role của bot → bot KHÔNG cấp được. Vào Server Settings → Roles, kéo role bot lên trên các role game.`);
+    }
     for (const key of t.channelKeys || []) {
       const chId = config.channels[key];
       if (!chId) continue; // kênh chưa cấu hình -> bỏ qua
@@ -100,6 +112,22 @@ async function applyChannelPermissions(client) {
       } catch (e) {
         out.push(`⚠️ Role kênh \`${key}\`: không đặt được quyền (${(e && e.message) || e}).`);
       }
+    }
+  }
+
+  // MỞ LẠI các kênh LUÔN công khai (gỡ lệnh ẩn @everyone nếu trước đó lỡ gate — vd shop).
+  for (const key of CR().openChannels || []) {
+    const chId = config.channels[key];
+    if (!chId) continue;
+    const ch = await client.channels.fetch(chId).catch(() => null);
+    if (!ch || !ch.permissionOverwrites) continue;
+    const ow = ch.permissionOverwrites.cache && ch.permissionOverwrites.cache.get(guild.roles.everyone.id);
+    if (!ow) continue; // chưa từng đặt overwrite -> vốn đã mở, bỏ qua
+    try {
+      await ch.permissionOverwrites.edit(guild.roles.everyone, { ViewChannel: null }); // trả về neutral -> hiện cho mọi người
+      out.push(`🔓 **${key}**: mở lại cho mọi người (nguồn quan trọng).`);
+    } catch (e) {
+      out.push(`⚠️ Mở lại kênh \`${key}\`: không gỡ được lệnh ẩn (${(e && e.message) || e}).`);
     }
   }
   return out;

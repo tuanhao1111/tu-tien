@@ -23,6 +23,9 @@ const health = require('./health');       // SINH MỆNH ngoài trận (HP bền
 const worldboss = require('./worldboss'); // BOSS THẾ GIỚI (catalog + công thức HP/thưởng)
 const farm = require('./farm');           // Linh Điền trồng trọt (công thức gieo/thu)
 const titles = require('./titles');       // DANH HIỆU (buff chỉ số khi đeo)
+const petbeasts = require('./petbeasts'); // NGỰ THÚ (bạn chiến PvE: chỉ số + đòn phụ)
+const petgacha = require('./petgacha');   // GACHA bắt thú (quay + pity)
+const thanthong = require('./thanthong'); // THẦN THÔNG (nhánh tu Nguyên Thần: buff chỉ số)
 const forge = require('./forge');         // RÈN KHÍ LÔ (đan phương rèn trang bị)
 
 // Đường dẫn DB: mặc định tu-tien.db cạnh code. CÓ THỂ đổi qua .env DB_PATH để
@@ -131,6 +134,19 @@ db.exec(`
   addCol('forge_charms', 'forge_charms TEXT');
   // --- KỲ NGỘ: mốc nhận thưởng kỳ ngộ gần nhất (cooldown) ---
   addCol('kyngo_ts', 'kyngo_ts INTEGER NOT NULL DEFAULT 0');
+  // --- DU TIÊN (Nguyên Thần Xuất Khiếu): chuyến lịch luyện idle đang chạy ---
+  addCol('dutien_ts', 'dutien_ts INTEGER NOT NULL DEFAULT 0'); // mốc BẮT ĐẦU chuyến (0 = Nguyên Thần đang ở thân)
+  addCol('dutien_key', 'dutien_key TEXT');                     // id điểm đến chuyến hiện tại
+  // --- NGỰ THÚ: yêu thú đã thu phục + con đang theo ---
+  addCol('pets', 'pets TEXT');                                 // JSON { petKey: { lv } }
+  addCol('pet_active', 'pet_active TEXT');                     // key con đang trang bị (null = không)
+  addCol('pet_pity', 'pet_pity INTEGER NOT NULL DEFAULT 0');   // bộ đếm pity quay TIÊN NGỌC (chưa ra Thần)
+  addCol('pet_charm', 'pet_charm INTEGER NOT NULL DEFAULT 0');  // 🪬 Ngự Thú Phù (chống trượt khi đột phá cấp thú)
+  // --- THẦN THÔNG: cấp Nguyên Thần + Thần Thông đang vận ---
+  addCol('than_level', 'than_level INTEGER NOT NULL DEFAULT 1'); // cấp Nguyên Thần (1..maxLevel)
+  addCol('thanthong', 'thanthong TEXT');                        // JSON mảng id Thần Thông đang vận
+  // --- TRUY TUNG NHIẾP HỒN: cooldown farm Yêu Hồn Phách ---
+  addCol('sanhon_ts', 'sanhon_ts INTEGER NOT NULL DEFAULT 0');
 }
 
 // --- Migration 1 lần: ĐỔI hệ gear sang CATALOG có tên (gear.js) ---
@@ -267,6 +283,14 @@ const Q = {
   setLinhDienTs: db.prepare('UPDATE players SET linhdien_ts = ? WHERE discord_id = ?'),
   setLinhDienPlot: db.prepare('UPDATE players SET linhdien_ts = ?, linhdien_seeds = ? WHERE discord_id = ?'),
   setSanYeuTs: db.prepare('UPDATE players SET sanyeu_ts = ? WHERE discord_id = ?'),
+  setSanHonTs: db.prepare('UPDATE players SET sanhon_ts = ? WHERE discord_id = ?'),
+  setDuTien: db.prepare('UPDATE players SET dutien_ts = ?, dutien_key = ? WHERE discord_id = ?'),
+  setPets: db.prepare('UPDATE players SET pets = ? WHERE discord_id = ?'),
+  setPetActive: db.prepare('UPDATE players SET pet_active = ? WHERE discord_id = ?'),
+  setPetPity: db.prepare('UPDATE players SET pet_pity = ? WHERE discord_id = ?'),
+  addPetCharm: db.prepare('UPDATE players SET pet_charm = pet_charm + ? WHERE discord_id = ?'),
+  setThanLevel: db.prepare('UPDATE players SET than_level = ? WHERE discord_id = ?'),
+  setThanThong: db.prepare('UPDATE players SET thanthong = ? WHERE discord_id = ?'),
   setTowerBest: db.prepare('UPDATE players SET thap_best = ? WHERE discord_id = ?'),
   setTowerTs: db.prepare('UPDATE players SET thap_ts = ? WHERE discord_id = ?'),
   // sinh mệnh (HP bền)
@@ -727,6 +751,10 @@ function harvestLinhDien(id, now = Date.now()) {
   return { ok: true, mats, seeds: st.seeds };
 }
 function setSanYeuTs(id, ts) { Q.setSanYeuTs.run(ts, id); }
+function setSanHonTs(id, ts) { Q.setSanHonTs.run(ts, id); }
+// DU TIÊN: bắt đầu chuyến (key + mốc) / dọn chuyến (key=null, ts=0).
+function startDuTien(id, key, ts) { Q.setDuTien.run(ts, key, id); }
+function clearDuTien(id) { Q.setDuTien.run(0, null, id); }
 function setTowerTs(id, ts) { Q.setTowerTs.run(ts, id); }
 function setTowerBest(id, floor) { Q.setTowerBest.run(floor, id); }
 
@@ -978,22 +1006,240 @@ function stagesSinceJoinOf(p) {
 }
 // Bonus trang bị gộp (nhập môn + gear mặc + DANH HIỆU đang đeo). Cộng PHẲNG
 //  -> không phá cân bằng phái. Danh hiệu chỉ thêm chút buff (xem titles.js).
-function combatGearBonus(player) {
+//  withPet=true: gộp thêm chỉ số NGỰ THÚ (build PvE + PvP đều bật — GĐ24).
+function combatGearBonus(player, withPet = false) {
   const a = equipment.gearBonus(getEquipment(player), getEquipEnh(player)); // bộ nhập môn (+cường hóa)
   const b = gear.sumBonus(getEquippedItems(player), player.sect); // gear đầy đủ (+tứ tính nếu hợp phái)
   const t = titles.combatBonus(player.title); // buff danh hiệu đang đeo ({} nếu không có)
+  const tt = thanThongBonus(player); // THẦN THÔNG đang vận (áp CẢ PvE LẪN PvP)
+  const p = withPet ? petCombatBonus(player) : {}; // ngự thú (PvE + PvP nếu caller bật cờ)
   const out = {};
-  for (const k of ['hp', 'atk', 'def', 'spd', 'mp', 'crit', 'dodge', 'critDmg']) out[k] = (a[k] || 0) + (b[k] || 0) + (t[k] || 0);
+  for (const k of ['hp', 'atk', 'def', 'spd', 'mp', 'crit', 'dodge', 'critDmg']) out[k] = (a[k] || 0) + (b[k] || 0) + (t[k] || 0) + (tt[k] || 0) + (p[k] || 0);
   return out;
 }
-// Dựng combatant hiệu dụng của 1 người (đầy đủ thuộc tính/cấp chiêu/trang bị gộp).
+// Dựng combatant hiệu dụng của 1 người (đầy đủ thuộc tính/cấp chiêu/trang bị + Ngự Thú).
+//  Dùng cho boss/phó bản (PvE). PvP có builder riêng (dauphap.js) cũng đã bật Ngự Thú.
 function buildCombatant(player, name) {
   return combat.build(name || player.username, player.realm, player.tier, player.sect, getEquipped(player), {
     attrs: getAttributes(player),
     skillLevels: getSkillLevels(player),
     stagesSinceJoin: stagesSinceJoinOf(player),
-    gearBonus: combatGearBonus(player),
+    gearBonus: combatGearBonus(player, true),
+    pet: petStrike(player),
   });
+}
+
+// =====================================================================
+//  NGỰ THÚ (bạn chiến PvE): sở hữu (pets) + con đang theo (pet_active)
+// =====================================================================
+function getPets(player) {
+  if (!player || !player.pets) return {};
+  try { const o = JSON.parse(player.pets); return o && typeof o === 'object' ? o : {}; } catch (_) { return {}; }
+}
+// Con đang theo: { key, lv, exp, beast } | null.
+function getActivePet(player) {
+  const key = player && player.pet_active;
+  if (!key) return null;
+  const owned = getPets(player)[key];
+  const beast = petbeasts.beast(key);
+  if (!owned || !beast) return null;
+  return { key, lv: owned.lv || 1, exp: owned.exp || 0, beast };
+}
+// Chỉ số PHẲNG con đang theo (cho combat PvE). {} nếu không có.
+function petCombatBonus(player) {
+  const ap = getActivePet(player);
+  return ap ? petbeasts.bonusAt(ap.beast, ap.lv) : {};
+}
+// Dữ liệu đòn phụ con đang theo (cho combat.petStrike). null nếu không có.
+function petStrike(player) {
+  const ap = getActivePet(player);
+  return ap ? petbeasts.strikeAt(ap.beast, ap.lv) : null;
+}
+// Thu phục 1 con: tốn linh thạch + nguyên liệu. Trả { ok, beast } hoặc { err }.
+function tamePet(id, key) {
+  const p = getPlayer(id); if (!p) return { err: 'noplayer' };
+  const b = petbeasts.beast(key); if (!b) return { err: 'nobeast' };
+  if ((p.realm || 0) < b.minRealm) return { err: 'realm', need: b.minRealm };
+  const pets = getPets(p);
+  if (pets[key]) return { err: 'owned' };
+  if ((p.stones || 0) < (b.tameStones || 0)) return { err: 'nostones', need: b.tameStones };
+  if (!hasMaterialsFor(getMaterials(p), b.tameMats || {})) return { err: 'nomats', mats: b.tameMats };
+  const tx = db.transaction(() => {
+    addStones(id, -(b.tameStones || 0)); // trừ raw (amount<=0 không nerf)
+    if (b.tameMats) { const neg = {}; for (const [m, q] of Object.entries(b.tameMats)) neg[m] = -q; addMaterials(id, neg); }
+    pets[key] = { lv: 1 };
+    Q.setPets.run(JSON.stringify(pets), id);
+    if (!p.pet_active) Q.setPetActive.run(key, id); // tự trang bị con đầu tiên
+  });
+  tx();
+  return { ok: true, beast: b };
+}
+function getPetCharm(player) { return (player && player.pet_charm) || 0; }
+
+// CHO ĂN thú: tốn 1 🍖 thức ăn + 👻 Yêu Hồn Phách -> +EXP (chặn ở EXP cần lên cấp).
+//  Trả { ok, lv, exp, need, full } hoặc { err, need }.
+function feedPet(id, key) {
+  const p = getPlayer(id); if (!p) return { err: 'noplayer' };
+  const b = petbeasts.beast(key); if (!b) return { err: 'nobeast' };
+  const pets = getPets(p);
+  const cur = pets[key]; if (!cur) return { err: 'notowned' };
+  const lv = cur.lv || 1;
+  if (lv >= petbeasts.maxLevel()) return { err: 'maxed' };
+  const f = (config.pet && config.pet.feed) || {};
+  const need = petbeasts.expNeed(lv);
+  if ((cur.exp || 0) >= need) return { err: 'full' }; // đã đầy -> phải đột phá
+  const bag = getMaterials(p);
+  if ((bag[f.foodId] || 0) < 1) return { err: 'nofood' };
+  if ((bag.yeu_hon_phach || 0) < (f.feedYhp || 0)) return { err: 'noyhp', need: f.feedYhp };
+  const exp = Math.min(need, (cur.exp || 0) + (f.foodExp || 0));
+  const tx = db.transaction(() => {
+    addMaterials(id, { [f.foodId]: -1, yeu_hon_phach: -(f.feedYhp || 0) });
+    pets[key] = { lv, exp };
+    Q.setPets.run(JSON.stringify(pets), id);
+  });
+  tx();
+  return { ok: true, lv, exp, need, full: exp >= need };
+}
+
+// ĐỘT PHÁ cấp thú (EXP đầy): có tỉ lệ TRƯỢT; useCharm -> +tỉ lệ & không mất EXP khi trượt.
+//  Trả { ok, success, lv, rate, evolvedTo, usedCharm } hoặc { err }.
+function breakPet(id, key, useCharm) {
+  const p = getPlayer(id); if (!p) return { err: 'noplayer' };
+  const b = petbeasts.beast(key); if (!b) return { err: 'nobeast' };
+  const pets = getPets(p);
+  const cur = pets[key]; if (!cur) return { err: 'notowned' };
+  const lv = cur.lv || 1;
+  if (lv >= petbeasts.maxLevel()) return { err: 'maxed' };
+  const need = petbeasts.expNeed(lv);
+  if ((cur.exp || 0) < need) return { err: 'notready', need };
+  const f = (config.pet && config.pet.feed) || {};
+  const hasCharm = getPetCharm(p) > 0;
+  const doCharm = !!useCharm && hasCharm;
+  if (useCharm && !hasCharm) return { err: 'nocharm' };
+  const rate = Math.min(0.99, petbeasts.breakRate(lv) + (doCharm ? (f.charmBonus || 0) : 0));
+  const success = Math.random() < rate;
+  const evoBefore = petbeasts.evoStage(lv);
+  const newLv = success ? lv + 1 : lv;
+  const evoAfter = petbeasts.evoStage(newLv);
+  const tx = db.transaction(() => {
+    if (doCharm) Q.addPetCharm.run(-1, id);
+    let exp;
+    if (success) exp = 0;
+    else exp = doCharm ? need : Math.floor(need * (f.breakFailKeepPct != null ? f.breakFailKeepPct : 0.5));
+    pets[key] = { lv: newLv, exp };
+    Q.setPets.run(JSON.stringify(pets), id);
+  });
+  tx();
+  return { ok: true, success, lv: newLv, rate, usedCharm: doCharm, evolvedTo: evoAfter > evoBefore ? evoAfter : 0 };
+}
+// Trang bị / tháo con theo (key=null để tháo). Trả { ok } hoặc { err }.
+function setActivePet(id, key) {
+  const p = getPlayer(id); if (!p) return { err: 'noplayer' };
+  if (key && !getPets(p)[key]) return { err: 'notowned' };
+  Q.setPetActive.run(key || null, id);
+  return { ok: true };
+}
+
+// GACHA bắt thú (Chiêu Hồn Đài). mode 'lt' | 'premium'. Trùng -> trả Yêu Hồn Phách.
+//  Trả { ok, beast, tier, dup, yhp, pityHit, newPity } hoặc { err, need }.
+function gachaPet(id, mode) {
+  const p = getPlayer(id); if (!p) return { err: 'noplayer' };
+  const g = (config.pet && config.pet.gacha) || {};
+  if (mode === 'premium') {
+    if ((p.premium || 0) < (g.premiumTienngoc || 0)) return { err: 'nopremium', need: g.premiumTienngoc };
+  } else {
+    if ((p.stones || 0) < (g.ltStones || 0)) return { err: 'nostones', need: g.ltStones };
+    if (!hasMaterialsFor(getMaterials(p), { yeu_hon_phach: g.ltYhp || 0 })) return { err: 'noyhp', need: g.ltYhp };
+  }
+  const pity = p.pet_pity || 0;
+  const res = petgacha.roll(mode, pity);
+  const tier = res.beast.tier;
+  const pets = getPets(p);
+  const dup = !!pets[res.beast.key];
+  let yhp = 0;
+  const newPity = mode === 'premium' ? (tier === 'than' ? 0 : pity + 1) : pity;
+  const tx = db.transaction(() => {
+    if (mode === 'premium') Q.addPremium.run(-(g.premiumTienngoc || 0), id);
+    else { addStones(id, -(g.ltStones || 0)); addMaterials(id, { yeu_hon_phach: -(g.ltYhp || 0) }); }
+    if (dup) { yhp = (g.dupYhp && g.dupYhp[tier]) || 0; if (yhp > 0) addMaterials(id, { yeu_hon_phach: yhp }); }
+    else { pets[res.beast.key] = { lv: 1 }; Q.setPets.run(JSON.stringify(pets), id); if (!p.pet_active) Q.setPetActive.run(res.beast.key, id); }
+    if (mode === 'premium') Q.setPetPity.run(newPity, id);
+  });
+  tx();
+  return { ok: true, beast: res.beast, tier, dup, yhp, pityHit: res.pity, newPity };
+}
+
+// Mua thẳng 1 thú trong Shop (giá cao theo bậc). Trả { ok, beast, cost } hoặc { err }.
+function buyPetDirect(id, key) {
+  const p = getPlayer(id); if (!p) return { err: 'noplayer' };
+  const b = petbeasts.beast(key); if (!b) return { err: 'nobeast' };
+  if (getPets(p)[key]) return { err: 'owned' };
+  const cost = petbeasts.buyStonesOf(b);
+  if ((p.stones || 0) < cost) return { err: 'nostones', need: cost };
+  const tx = db.transaction(() => {
+    addStones(id, -cost);
+    const pets = getPets(p); pets[key] = { lv: 1 }; Q.setPets.run(JSON.stringify(pets), id);
+    if (!p.pet_active) Q.setPetActive.run(key, id);
+  });
+  tx();
+  return { ok: true, beast: b, cost };
+}
+
+// =====================================================================
+//  THẦN THÔNG (nhánh tu Nguyên Thần): cấp (than_level) + Thần Thông đang vận
+// =====================================================================
+function getThanLevel(player) { return Math.max(1, (player && player.than_level) || 1); }
+// Danh sách id Thần Thông đang vận (lọc về hợp lệ + đã mở + trong số ô cho phép).
+function getThanThong(player) {
+  let arr = [];
+  try { arr = player && player.thanthong ? JSON.parse(player.thanthong) : []; } catch (_) { arr = []; }
+  if (!Array.isArray(arr)) arr = [];
+  const lv = getThanLevel(player);
+  const unlocked = new Set(thanthong.unlockedAt(lv).map((p) => p.id));
+  const valid = arr.filter((id) => unlocked.has(id));
+  return valid.slice(0, thanthong.slotsForLevel(lv));
+}
+// Cho thẻ Hồ Sơ: [{ id, emoji }] của Thần Thông đang vận.
+function getActiveThanThong(player) {
+  return getThanThong(player).map((id) => { const p = thanthong.power(id); return { id, emoji: p ? p.emoji : '👁️' }; });
+}
+// Tổng bonus PHẲNG của Thần Thông đang vận (cộng vào combat — PvE + PvP).
+function thanThongBonus(player) {
+  if (!config.thanthong || !config.thanthong.enabled) return {};
+  return thanthong.sumBonus(getThanThong(player));
+}
+// Lên cấp Nguyên Thần: tốn linh thạch + nguyên liệu. Trả { ok, level } hoặc { err }.
+function levelThanThong(id) {
+  const p = getPlayer(id); if (!p) return { err: 'noplayer' };
+  const lv = getThanLevel(p);
+  if (lv >= thanthong.maxLevel()) return { err: 'maxed' };
+  const cost = thanthong.levelCost(lv, p);
+  if ((p.stones || 0) < cost.stones) return { err: 'nostones', need: cost.stones };
+  if (!hasMaterialsFor(getMaterials(p), cost.mat)) return { err: 'nomats', mat: cost.mat };
+  const tx = db.transaction(() => {
+    addStones(id, -cost.stones);
+    if (cost.mat) { const neg = {}; for (const [m, q] of Object.entries(cost.mat)) neg[m] = -q; addMaterials(id, neg); }
+    Q.setThanLevel.run(lv + 1, id);
+  });
+  tx();
+  return { ok: true, level: lv + 1, cost };
+}
+// Bật/tắt 1 Thần Thông (tôn trọng số ô + đã mở). Trả { ok, on } hoặc { err }.
+function toggleThanThong(id, ttId) {
+  const p = getPlayer(id); if (!p) return { err: 'noplayer' };
+  const pw = thanthong.power(ttId); if (!pw) return { err: 'noskill' };
+  const lv = getThanLevel(p);
+  if (lv < pw.unlock) return { err: 'locked', need: pw.unlock };
+  const cur = getThanThong(p);
+  const set = new Set(cur);
+  let on;
+  if (set.has(ttId)) { set.delete(ttId); on = false; }
+  else {
+    if (cur.length >= thanthong.slotsForLevel(lv)) return { err: 'full', slots: thanthong.slotsForLevel(lv) };
+    set.add(ttId); on = true;
+  }
+  Q.setThanThong.run(JSON.stringify([...set]), id);
+  return { ok: true, on };
 }
 
 // =====================================================================
@@ -1740,6 +1986,24 @@ module.exports = {
   // combatant hiệu dụng + bonus trang bị gộp
   buildCombatant,
   combatGearBonus,
+  getPets,
+  getActivePet,
+  petCombatBonus,
+  petStrike,
+  tamePet,
+  feedPet,
+  breakPet,
+  getPetCharm,
+  addPetCharm: (id, n) => Q.addPetCharm.run(n, id),
+  setActivePet,
+  gachaPet,
+  buyPetDirect,
+  getThanLevel,
+  getThanThong,
+  getActiveThanThong,
+  thanThongBonus,
+  levelThanThong,
+  toggleThanThong,
   stagesSinceJoinOf,
   // sinh mệnh ngoài trận (HP bền)
   vitMax,
@@ -1784,6 +2048,9 @@ module.exports = {
   plantLinhDien,
   harvestLinhDien,
   setSanYeuTs,
+  setSanHonTs,
+  startDuTien,
+  clearDuTien,
   setTowerTs,
   setTowerBest,
   // luyện đan

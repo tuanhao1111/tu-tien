@@ -28,6 +28,10 @@ const MATERIALS = {
   co_phach:   { name: 'Cổ Phách',      emoji: '⚰️', tier: 4, desc: 'Tàn hồn thượng cổ chiến tướng, oán khí ngút trời.' },
   // Hạt giống Linh Điền (mua ở Shop, gieo ở Linh Điền — KHÔNG rớt từ bí cảnh).
   linh_chung: { name: 'Linh Chủng',    emoji: '🌰', tier: 1, desc: 'Hạt giống linh dược — gieo ở Linh Điền (panel Tu Luyện) để thu Linh Thảo.' },
+  // Yêu Hồn Phách — tài nguyên BẮT/NÂNG NGỰ THÚ (farm ở Luyện Trường "Truy Tung"; pet trùng cũng trả về đây).
+  yeu_hon_phach: { name: 'Yêu Hồn Phách', emoji: '👻', tier: 4, desc: 'Hồn phách yêu thú ngưng tụ — dùng để bắt & nâng cấp Ngự Thú (gacha + cho ăn).' },
+  // Yêu Thú Lương — THỨC ĂN cho Ngự Thú (mua Shop / rớt Truy Tung). Cho ăn -> +EXP thú.
+  yeu_thu_luong: { name: 'Yêu Thú Lương', emoji: '🍖', tier: 2, desc: 'Lương thực nuôi Ngự Thú — cho ăn để tích kinh nghiệm, đủ thì đột phá cấp.' },
 };
 
 function materialInfo(id) {

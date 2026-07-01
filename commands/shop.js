@@ -13,9 +13,12 @@ const forge = require('../forge');
 const gear = require('../gear');
 const bicanh = require('../bicanh');
 const alchemy = require('../alchemy');
+const cult = require('../cultivation');
+const petbeasts = require('../petbeasts'); // catalog Ngự Thú (bậc + giá mua thẳng)
 const ui = require('../util/ui');
 const assets = require('../assets');
 const shopCard = require('../render/shopCard'); // thẻ shop kiểu RPG (kệ vật phẩm + giá)
+const petGachaCard = require('../render/petGachaCard'); // thẻ kết quả quay Chiêu Hồn
 
 const CK = 'shop';
 const cur = config.currency;
@@ -38,7 +41,10 @@ function mainComponents() {
   });
   return [
     ui.select('shop:sel', '🛒 Chọn món muốn mua…', opts),
-    ui.row(ui.btn('shop:premium', 'Phường Thị Cao Cấp', 'primary', { emoji: '🔮' })),
+    ui.row(
+      ui.btn('shop:premium', 'Phường Thị Cao Cấp', 'primary', { emoji: '🔮' }),
+      ui.btn('gacha:open', 'Chiêu Hồn Đài', 'success', { emoji: '🎰' }),
+    ),
   ];
 }
 
@@ -176,6 +182,7 @@ function buyPremium(userId, id) {
   else if (it.cat === 'refine') { db.addRefine(userId, it.qty); detail = `🔩 +${it.qty} Tinh Thiết`; }
   else if (it.cat === 'pill') { db.addPills(userId, { [it.pillId]: it.qty }); const pi = alchemy.pillInfo(it.pillId); detail = `💊 +${it.qty} ${pi ? pi.name : it.pillId}`; }
   else if (it.cat === 'charm') { db.addForgeCharms(userId, { [it.charmId]: it.qty }); const ci = forge.charm(it.charmId); detail = `${ci ? ci.emoji : '🔨'} +${it.qty} ${ci ? ci.name : it.charmId} — dùng ở **Lò Rèn**.`; }
+  else if (it.cat === 'petcharm') { db.addPetCharm(userId, it.qty); detail = `🪬 +${it.qty} Ngự Thú Phù — dùng khi **đột phá cấp Ngự Thú**.`; }
   else if (it.cat === 'title') { db.grantTitle(userId, it.titleId); detail = `🏷️ Nhận danh hiệu ${titles.label(it.titleId)} — qua **Hồ Sơ → ⚙️ Chức năng → Danh hiệu** để đeo.`; }
   else if (it.cat === 'chest') {
     const item = gear.rollDrop(p.realm, p.tier, { rarity: it.rarity, aff: p.sect || undefined });
@@ -212,6 +219,80 @@ function buy(userId, id, qty) {
   else if (it.cat === 'pill') db.addPills(userId, { [id]: qty });
   else if (it.cat === 'refine') db.addRefine(userId, qty);
   return { ok: true, cost, qty };
+}
+
+// =====================================================================
+//  🎰 CHIÊU HỒN ĐÀI — GACHA BẮT NGỰ THÚ (GĐ25)
+// =====================================================================
+const GACHA_MIN_REALM = (config.pet && config.pet.minRealm) || 4;
+
+function chieuHonView(player) {
+  const g = (config.pet && config.pet.gacha) || {};
+  const yhp = db.getMaterials(player).yeu_hon_phach || 0;
+  const pity = player.pet_pity || 0;
+  const tierStr = petbeasts.TIER_ORDER.map((t) => { const ti = petbeasts.tierInfo(t); return `${ti.emoji}${ti.name}`; }).join(' · ');
+  const e = ui.panelEmbed(CK, {
+    title: '🎰 Chiêu Hồn Đài — Bắt Ngự Thú',
+    desc:
+      `Triệu hồn yêu thú làm **bạn chiến**! Bậc: ${tierStr} _(🟡 Thần cực hiếm)_.\n\n` +
+      `🌀 **Quay thường** — ${cur.emoji}${ui.num(g.ltStones)}${cur.short} + 👻${g.ltYhp} Yêu Hồn Phách _(KHÔNG pity)_\n` +
+      `🔮 **Quay cao cấp** — ${pcur.emoji}${g.premiumTienngoc}${pcur.short} _(pity **${pity}/${g.pityPremium}** — đủ là CHẮC CHẮN 🟡 Thần)_\n\n` +
+      `Túi: ${cur.emoji}**${ui.num(player.stones)}** · 👻**${yhp}** · ${pcur.emoji}**${player.premium || 0}**\n\n` +
+      `_Trùng thú → trả về 👻 Yêu Hồn Phách. Tỉ lệ Thần cực thấp — chăm cày hoặc **mua thẳng** thú (giá cao)._`,
+    footer: 'Yêu Hồn Phách farm ở Luyện Trường → Truy Tung Nhiếp Hồn.',
+  });
+  return { embeds: [e], components: [ui.row(
+    ui.btn('gacha:roll:lt', 'Quay thường', 'success', { emoji: '🌀' }),
+    ui.btn('gacha:roll:premium', 'Quay cao cấp', 'primary', { emoji: '🔮' }),
+    ui.btn('gacha:buy', 'Mua thú thẳng', 'secondary', { emoji: '🛒' }),
+    ui.btn('gacha:back', 'Về quầy', 'secondary', { emoji: '◀️' }),
+  )] };
+}
+
+async function gachaResultView(res) {
+  const ti = petbeasts.tierInfo(res.tier);
+  const comps = [ui.row(
+    ui.btn('gacha:roll:lt', 'Quay thường', 'success', { emoji: '🌀' }),
+    ui.btn('gacha:roll:premium', 'Quay cao cấp', 'primary', { emoji: '🔮' }),
+    ui.btn('gacha:open', 'Chiêu Hồn Đài', 'secondary', { emoji: '◀️' }),
+  )];
+  const resultLine = res.dup
+    ? `🔁 **Trùng** → +👻 **${res.yhp}** Yêu Hồn Phách.`
+    : '✨ **Thú mới!** Vào **Hồ Sơ → 🐉 Ngự Thú** để trang bị.';
+  const pityLine = res.pityHit ? '\n🎯 *Pity kích hoạt — chắc chắn Thần Thú!*' : '';
+  try {
+    const buf = await petGachaCard.render({
+      header: res.pityHit ? 'PITY · THẦN THÚ' : 'CHIÊU HỒN',
+      name: res.beast.name, emoji: res.beast.emoji,
+      tierColor: '#' + ti.color.toString(16).padStart(6, '0'), tierName: ti.name, tierEmoji: ti.emoji,
+      petDataUri: assets.dataUri(`pet_${res.beast.key}`),
+      sub: res.dup ? `Trùng → +👻 ${res.yhp} Yêu Hồn Phách` : 'Thú mới!',
+    });
+    const e = ui.panelEmbed(CK, { title: `${ti.emoji} ${res.beast.name} — ${ti.name}`, desc: `_${res.beast.lore}_\n\n${resultLine}${pityLine}`, footer: 'Quay tiếp hoặc về Chiêu Hồn Đài.' });
+    e.setImage('attachment://gacha.png');
+    return { embeds: [e], components: comps, files: [new AttachmentBuilder(buf, { name: 'gacha.png' })] };
+  } catch (err) {
+    console.error('[petGachaCard] render fail:', err && err.message);
+    const e = ui.panelEmbed(CK, { title: `${ti.emoji} ${res.beast.name} — ${ti.name}`, desc: `${res.beast.emoji} **${res.beast.name}**\n_${res.beast.lore}_\n\n${resultLine}${pityLine}`, footer: 'Quay tiếp hoặc về Chiêu Hồn Đài.' });
+    return { embeds: [e], components: comps };
+  }
+}
+
+function petBuyView(player) {
+  const pets = db.getPets(player);
+  const e = ui.panelEmbed(CK, {
+    title: '🛒 Mua Thú Thẳng',
+    desc:
+      'Mua thẳng Ngự Thú bằng linh thạch — **giá cao** (đường cày chắc ăn thay hên xui gacha):\n\n' +
+      petbeasts.BEASTS.map((b) => { const ti = petbeasts.tierInfo(b.tier); return `${ti.emoji} ${b.emoji} **${b.name}** — ${cur.emoji}${ui.num(petbeasts.buyStonesOf(b))}${cur.short}${pets[b.key] ? ' ✅' : ''}`; }).join('\n') +
+      `\n\nTúi: ${cur.emoji}**${ui.num(player.stones)}**${cur.short}`,
+    footer: 'Chọn thú muốn mua (món đã có không hiện).',
+  });
+  const opts = petbeasts.BEASTS.filter((b) => !pets[b.key]).map((b) => { const ti = petbeasts.tierInfo(b.tier); return { label: `${b.name} — ${ui.num(petbeasts.buyStonesOf(b))}${cur.short}`.slice(0, 90), emoji: b.emoji, value: b.key, description: ti.name }; });
+  const comps = [];
+  if (opts.length) comps.push(ui.select('gacha:buysel', '🛒 Chọn thú muốn mua…', opts));
+  comps.push(ui.row(ui.btn('gacha:open', 'Chiêu Hồn Đài', 'secondary', { emoji: '◀️' })));
+  return { embeds: [e], components: comps };
 }
 
 async function open(interaction) {
@@ -251,6 +332,42 @@ module.exports = {
         const i = info(shop.get(parts[2]));
         await upd(itemView(db.getPlayer(id), parts[2]));
         return interaction.followUp({ content: `🛒 Đã mua **${i.name} ×${res.qty}** _(−${cur.emoji}${ui.num(res.cost)}${cur.short})_.`, flags: MessageFlags.Ephemeral });
+      }
+    },
+
+    // --- 🎰 Chiêu Hồn Đài (gacha bắt Ngự Thú) ---
+    async gacha(interaction) {
+      const parts = interaction.customId.split(':');
+      const action = parts[1];
+      const id = interaction.user.id;
+      const p = db.getPlayer(id);
+      if (!p) return interaction.reply({ content: 'Đạo hữu chưa nhập đạo!', flags: MessageFlags.Ephemeral });
+      if ((p.realm || 0) < GACHA_MIN_REALM) {
+        const r = cult.REALMS[GACHA_MIN_REALM];
+        return interaction.reply({ content: `🔒 **Chiêu Hồn Đài** mở ở **${r.emoji} ${r.name}** (cùng Ngự Thú).`, flags: MessageFlags.Ephemeral });
+      }
+      const upd = (v) => interaction.update({ ...v, attachments: [] });
+
+      if (action === 'open') return upd(chieuHonView(p));
+      if (action === 'back') return updCard(interaction, mainView(p));
+      if (action === 'buy') return upd(petBuyView(p));
+
+      if (action === 'buysel' && interaction.isStringSelectMenu()) {
+        const res = db.buyPetDirect(id, interaction.values[0]);
+        if (res.err === 'nostones') return interaction.reply({ content: `😅 Thiếu linh thạch — cần ${cur.emoji}${ui.num(res.need)}${cur.short}.`, flags: MessageFlags.Ephemeral });
+        if (res.err) return upd(petBuyView(db.getPlayer(id)));
+        await upd(petBuyView(db.getPlayer(id)));
+        return interaction.followUp({ content: `🎉 Đã mua **${res.beast.emoji} ${res.beast.name}** _(−${cur.emoji}${ui.num(res.cost)}${cur.short})_! Vào **Hồ Sơ → 🐉 Ngự Thú** để trang bị.`, flags: MessageFlags.Ephemeral });
+      }
+
+      if (action === 'roll') {
+        const mode = parts[2] === 'premium' ? 'premium' : 'lt';
+        const res = db.gachaPet(id, mode);
+        if (res.err === 'nostones') return interaction.reply({ content: `😅 Thiếu linh thạch — cần ${cur.emoji}${ui.num(res.need)}${cur.short}.`, flags: MessageFlags.Ephemeral });
+        if (res.err === 'noyhp') return interaction.reply({ content: `👻 Thiếu Yêu Hồn Phách — cần **${res.need}**. Farm ở **Luyện Trường → 👻 Truy Tung Nhiếp Hồn**.`, flags: MessageFlags.Ephemeral });
+        if (res.err === 'nopremium') return interaction.reply({ content: `😅 Thiếu Tiên Ngọc — cần ${pcur.emoji}${res.need}${pcur.short}.`, flags: MessageFlags.Ephemeral });
+        if (res.err) return upd(chieuHonView(db.getPlayer(id)));
+        return updCard(interaction, gachaResultView(res));
       }
     },
 

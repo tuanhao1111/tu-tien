@@ -30,8 +30,10 @@ const PER = {
   mpPerLinhLuc: 0.3,
   defPerThePhach: 0.3,
   spdPerThanPhap: 0.25,
-  dodgePerThanPhap: 0.0012, dodgeCap: 0.06,
-  critPerNgoTinh: 0.0012,   critCap: 0.06,
+  // GĐ24: nới TRẦN né/bạo (giữ nguyên hệ số/điểm) để dồn điểm không bị phí ở bậc cao.
+  //  Trần chỉ "chạm" sau ~67-83 điểm (rất muộn) nên PvP Trúc Cơ/đầu game gần như không đổi.
+  dodgePerThanPhap: 0.0012, dodgeCap: 0.08, // né mạnh (né trắng) -> nới dè dặt
+  critPerNgoTinh: 0.0012,   critCap: 0.10,
   critDmgPerNgoTinh: 0.002,
 };
 

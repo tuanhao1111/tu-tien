@@ -7,6 +7,7 @@
 const config = require('./config');
 const cult = require('./cultivation');
 const pvp = require('./pvp');
+const petbeasts = require('./petbeasts');
 
 const cur = `${config.currency.emoji} ${config.currency.name}`;
 const realmsLine = cult.REALMS.map((r) => `${r.emoji} ${r.name}`).join(' → ');
@@ -88,17 +89,50 @@ const SECTIONS = [
       `Đạt **${cult.REALMS[3].emoji} ${cult.REALMS[3].name}** → mở **\`/luyentruong\`** (Tháp + Bí Cảnh). 🐗 **Săn Yêu** mở SỚM hơn — từ **${cult.REALMS[config.farm.sanYeu.minRealm || 1].emoji} ${cult.REALMS[config.farm.sanYeu.minRealm || 1].name}**.\n\n` +
       `🌱 **Linh Điền** (ở panel **Tu Luyện**) — **trồng trọt**: mua 🌰 Linh Chủng ở Phường Thị → **gieo** → sau ${Math.round(config.farm.linhDien.growMs / 60000)} phút chín → thu **${config.farm.linhDien.yieldPerSeed}× Linh Thảo/hạt** (offline vẫn chín). Đếm ngược **tự cập nhật**.\n\n` +
       `🐗 **Săn Yêu** (kênh **Bãi Săn Yêu** riêng, mở ở **${cult.REALMS[config.farm.sanYeu.minRealm || 1].emoji} ${cult.REALMS[config.farm.sanYeu.minRealm || 1].name}** — **chưa cần môn phái**) — đánh nhanh 1 yêu hoang kiếm linh thạch + tu vi (cooldown **${Math.round(config.farm.sanYeu.cooldownMs / 1000)}s**). Thua không mất gì. 🎲 Đôi khi gặp **Kỳ Ngộ** bất ngờ.\n\n` +
-      `🗼 **Thí Luyện Tháp** — leo tháp vô tận: thắng thì **lên tầng** + thưởng tăng dần; thua giữ nguyên kỷ lục (cooldown **${Math.round(config.farm.thap.cooldownMs / 1000)}s**). Có **⚡ Quét** gom nhanh thưởng. **Tháp cần có môn phái.** _(Đếm ngược cooldown tự cập nhật.)_`,
+      `🗼 **Thí Luyện Tháp** — leo tháp vô tận: thắng thì **lên tầng** + thưởng tăng dần; thua giữ nguyên kỷ lục (cooldown **${Math.round(config.farm.thap.cooldownMs / 1000)}s**). Có **⚡ Quét** gom nhanh thưởng. **Tháp cần có môn phái.** _(Đếm ngược cooldown tự cập nhật.)_\n\n` +
+      `👻 **Truy Tung Nhiếp Hồn** (mở ở **${cult.REALMS[config.farm.sanHon.minRealm || 4].emoji} ${cult.REALMS[config.farm.sanHon.minRealm || 4].name}**) — đánh yêu thú nhiếp **👻 Yêu Hồn Phách**: tài nguyên **bắt & nâng cấp Ngự Thú** (cooldown **${Math.round(config.farm.sanHon.cooldownMs / 1000)}s**).`,
   },
   {
     id: 'dauphap', emoji: '⚔️', label: 'Đấu Pháp (PvP)',
     title: '⚔️ Đấu Pháp — Luận Võ Đài (PvP)',
     body:
-      `Đạt **${cult.REALMS[4].emoji} ${cult.REALMS[4].name}** + có môn phái → mở **\`/dauphap\`** (hoặc panel **Đấu Pháp Đài**).\n\n` +
+      `Đạt **${cult.REALMS[config.pvp.minRealm].emoji} ${cult.REALMS[config.pvp.minRealm].name}** → mở **\`/dauphap\`** (hoặc panel **Đấu Pháp Đài**). _(GĐ24: hạ từ Nguyên Anh xuống Trúc Cơ — PvP sớm hơn.)_\n\n` +
       'Bấm **⚔️ Khiêu chiến** → hệ thống **ghép một cao thủ ngang điểm**, rồi đánh **bản sao chỉ số** của họ — **không cần đối thủ online**. Chưa có ai ngang sức thì ghép **đài chủ NPC** cùng bậc.\n\n' +
       `🏆 **Điểm đấu (ELO):** khởi điểm ${pvp.START_RATING}. Thắng **+điểm** + thưởng (${config.pvp.winStones}💎 · +${config.pvp.winTuVi} tu vi), thua **−điểm** (không mất gì khác). Cooldown **${config.pvp.cooldownMs < 60000 ? Math.round(config.pvp.cooldownMs / 1000) + ' giây' : Math.round(config.pvp.cooldownMs / 60000) + ' phút'}/trận** · đánh **theo lượt**.\n\n` +
       '🎖️ **Danh hiệu** leo dần theo điểm: *Vô Danh Tiểu Tốt → … → Thiên Hạ Đệ Nhất*. Thăng hạng được loan báo ở **Vọng Âm Đài**. Xem **🏆 Luận Võ Bảng** để so tài cao thủ thiên hạ.\n\n' +
       '💡 Đấu Pháp dùng **đúng** chỉ số combat của bạn — cộng thuộc tính, nâng chiêu, đổi loadout (`/kynang`) và trang bị đều có tác dụng.',
+  },
+  {
+    id: 'nguthu', emoji: '🐉', label: 'Ngự Thú (bạn chiến)',
+    title: '🐉 Ngự Thú — Bạn Chiến PvE',
+    body:
+      `Đạt **${cult.REALMS[(config.pet && config.pet.minRealm) || 4].emoji} ${cult.REALMS[(config.pet && config.pet.minRealm) || 4].name}** → mở **\`/nguthu\`** (hoặc **Hồ Sơ → 🐉 Ngự Thú**).\n\n` +
+      '🎰 **Bắt thú ở Chiêu Hồn Đài** (kênh **Shop**): quay bằng **LT + 👻 Yêu Hồn Phách** _(không pity)_ hoặc **🔮 Tiên Ngọc** _(tốn hơn, có pity)_. Tỉ lệ 🟡 **Thần Thú** cực thấp — trùng thú trả về 👻 Yêu Hồn Phách; hoặc **mua thẳng thú** (giá cao).\n' +
+      '👻 **Yêu Hồn Phách** farm ở **Luyện Trường → Truy Tung Nhiếp Hồn**.\n' +
+      `🐾 Có thú rồi → **trang bị 1 con** (Ngự Thú Viên / Hồ Sơ) → **cho ăn** 🍖 Yêu Thú Lương + 👻 để tích EXP → **đột phá cấp** (có **tỉ lệ trượt**, dùng 🪬 **Ngự Thú Phù** cho chắc). **Tiến hóa hình** ở mốc cấp, tối đa cấp **${(config.pet && config.pet.maxLevel) || 15}**.\n` +
+      '⚔️ Con đang theo **cộng chỉ số phẳng** (❤️ Sinh Lực · ⚔️ Công · 🛡️ Phòng · 🌀 Tốc) + thỉnh thoảng **tung đòn phụ** trong trận.\n' +
+      `🎯 Dùng được **cả PvE** (bí cảnh/săn yêu/tháp/boss/phó bản/đấu tập) **lẫn Đấu Pháp (PvP)** — ở PvP **cả hai đấu thủ** đều mang thú của mình (đối xứng).\n\n` +
+      `Có **${petbeasts.BEASTS.length} loại thú** (mở dần theo cảnh giới), mỗi con một lối: trâu bò, bạo lực, tốc độ… Cấp tối đa **${(config.pet && config.pet.maxLevel) || 10}**.`,
+  },
+  {
+    id: 'thanthong', emoji: '👁️', label: 'Thần Thông (Nguyên Thần)',
+    title: '👁️ Thần Thông — Nhánh Tu Nguyên Thần',
+    body:
+      `Đạt **${cult.REALMS[(config.thanthong && config.thanthong.minRealm) || 5].emoji} ${cult.REALMS[(config.thanthong && config.thanthong.minRealm) || 5].name}** → mở **\`/thanthong\`** (kênh **Nguyên Thần Điện**, hoặc **Hồ Sơ → 👁️ Thần Thông**).\n\n` +
+      `🧠 **Luyện Nguyên Thần** lên cấp (tốn linh thạch + nguyên liệu) — mỗi cấp mở thêm **1 Thần Thông** (tối đa cấp **${(config.thanthong && config.thanthong.maxLevel) || 8}**).\n` +
+      `🌌 **Vận Thần Thông** (tối đa **${(config.thanthong && config.thanthong.slotsMax) || 3} ô** theo cấp): mỗi cái cộng **chỉ số phẳng** (bạo/công/né/phòng/sinh lực…).\n` +
+      `🎯 Thần Thông áp **CẢ PvE LẪN Đấu Pháp (PvP)** — đối xứng theo mức đầu tư Nguyên Thần của mỗi người.\n\n` +
+      `Hiện trên thẻ Hồ Sơ ở dải **🎴 Chiêu & Đồng Hành** (ô **tím**).`,
+  },
+  {
+    id: 'dutien', emoji: '🧭', label: 'Du Tiên (Nguyên Thần)',
+    title: '🧭 Du Tiên — Nguyên Thần Xuất Khiếu (idle)',
+    body:
+      `Đạt **${cult.REALMS[(config.dutien && config.dutien.minRealm) || 6].emoji} ${cult.REALMS[(config.dutien && config.dutien.minRealm) || 6].name}** → mở **\`/dutien\`** (kênh **Du Tiên Đường** riêng).\n\n` +
+      'Nguyên Thần **rời thân** đi lịch luyện vùng xa — đây là vòng chơi **IDLE/offline**, khác hẳn combat:\n' +
+      '🪷 Chọn **điểm đến** (mở dần theo cảnh giới, dài **2h / 4h / 8h**) → Nguyên Thần lên đường (đếm ngược **tự cập nhật**, **offline vẫn chạy**) → khi về bấm **Thu cơ duyên**.\n' +
+      '🎁 Mỗi chuyến: **nguyên liệu hiếm + linh thạch + tu vi + cơ hội rớt trang bị & 🔮 Tiên Ngọc** (xa hơn = hậu hơn). Mỗi lúc **chỉ 1 chuyến**.\n\n' +
+      '_Tu vi/linh thạch từ Du Tiên vẫn chịu Linh Khí Loãng; nguyên liệu & Tiên Ngọc thì không._',
   },
   {
     id: 'luyendan', emoji: '💊', label: 'Luyện đan',
@@ -188,13 +222,16 @@ const SECTIONS = [
       '📜 **Hồ Sơ** — xem bản thân, chỉ số, **trang bị**, cộng thuộc tính, nâng chiêu, túi đồ, cẩm nang này.\n' +
       '🛡️ **Trang Bị** — kho đồ, mặc/cường hóa/phân giải (6 ô, 5 độ hiếm).\n' +
       '🐗 **Bãi Săn Yêu** — săn yêu nhanh (mở ở **🌬️ Luyện Khí**), panel **sticky**.\n' +
+      '🐉 **Ngự Thú Viên** — thu phục yêu thú làm bạn chiến (mở ở **👶 Nguyên Anh**), panel **sticky**.\n' +
+      '👁️ **Nguyên Thần Điện** — Thần Thông, nhánh tu Nguyên Thần (mở ở **✨ Hóa Thần**), panel **sticky**.\n' +
+      '🧭 **Du Tiên Đường** — Nguyên Thần xuất khiếu lịch luyện idle (mở ở **🌀 Luyện Hư**), panel **sticky**.\n' +
       '⛰️ **Luyện Trường** — Thí Luyện Tháp, Bí Cảnh _(cooldown tự đếm ngược)_.\n' +
       '🛒 **Phường Thị** — shop bán nguyên liệu · hạt giống · Tinh Thiết · đan.\n' +
       '⚔️ **Đấu Pháp Đài** — Luận Võ Đài xếp hạng (PvP) — trận **công khai**, panel **sticky tự cập nhật**.\n' +
       '🐲 **Boss Thế Giới** — công phạt chung toàn server, panel HP **thời gian thực**.\n' +
       '🏔️ **Bảng Xếp Hạng** — Phong Vân Bảng / Phú Hào Bảng / Luận Võ Bảng (**tự cập nhật**).\n' +
       '📣 **Vọng Âm Đài** — loan báo kỳ tích thiên hạ: độ kiếp, hạ boss, thần đan…\n\n' +
-      '🗝️ **Mở khóa kênh theo cảnh giới:** một số kênh **ẩn** cho tới khi đạo hữu đạt cảnh giới tương ứng — đột phá lên cảnh giới mới sẽ **tự được cấp vai trò** mở các kênh vừa mở khóa (Săn Yêu/BXH ở Luyện Khí, Môn Phái ở Trúc Cơ, Luyện Trường·Boss·Phường Thị·Lò Rèn·Tổ Đội ở Kim Đan, Đấu Pháp ở Nguyên Anh).',
+      '🗝️ **Mở khóa kênh theo cảnh giới:** một số kênh **ẩn** cho tới khi đạo hữu đạt cảnh giới tương ứng — đột phá lên cảnh giới mới sẽ **tự được cấp vai trò** mở các kênh vừa mở khóa (Săn Yêu/BXH ở Luyện Khí; Môn Phái·Đấu Pháp ở Trúc Cơ; Luyện Trường·Boss·Lò Rèn·Tổ Đội ở Kim Đan; Ngự Thú ở Nguyên Anh; Thần Thông ở Hóa Thần; Du Tiên ở Luyện Hư). **🛒 Phường Thị luôn mở** cho mọi người — nguồn vật phẩm quan trọng.',
   },
 ];
 

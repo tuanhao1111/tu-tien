@@ -24,7 +24,8 @@ function buildMe(player, username) {
     attrs: db.getAttributes(player),
     skillLevels: db.getSkillLevels(player),
     stagesSinceJoin: Math.max(0, cult.globalStage(player.realm, player.tier) - (player.sect_join_stage || 0)),
-    gearBonus: db.combatGearBonus(player),
+    gearBonus: db.combatGearBonus(player, true), // PvE -> gộp Ngự Thú
+    pet: db.petStrike(player),
   });
 }
 

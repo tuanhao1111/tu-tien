@@ -42,13 +42,15 @@ function fmtCd(ms) {
   return s < 60 ? `${s} giây` : `${Math.ceil(s / 60)} phút`;
 }
 
-// Build combatant đầy đủ (thuộc tính + cấp chiêu + buff bậc + trang bị) từ 1 player row.
+// Build combatant đầy đủ (thuộc tính + cấp chiêu + buff bậc + trang bị + NGỰ THÚ) từ 1 player row.
+//  GĐ24: Ngự Thú dùng được cả PvP -> cả hai đấu thủ đều mang thú của mình (đối xứng).
 function buildCombatant(name, p) {
   return combat.build(name, p.realm, p.tier, p.sect, db.getEquipped(p), {
     attrs: db.getAttributes(p),
     skillLevels: db.getSkillLevels(p),
     stagesSinceJoin: Math.max(0, cult.globalStage(p.realm, p.tier) - (p.sect_join_stage || 0)),
-    gearBonus: db.combatGearBonus(p),
+    gearBonus: db.combatGearBonus(p, true), // gộp chỉ số Ngự Thú
+    pet: db.petStrike(p),                   // đòn phụ Ngự Thú
   });
 }
 

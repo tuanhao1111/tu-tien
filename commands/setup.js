@@ -101,16 +101,25 @@ module.exports = {
       results.push(`🗑️ Đã gỡ panel cũ **${saved.channel_key}** (không còn dùng).`);
     }
 
+    const panelText = `🛠️ **Kết quả /setup:**\n${results.join('\n')}`;
+    await interaction.editReply({ content: panelText.length > 1900 ? panelText.slice(0, 1900) + '\n… (rút gọn)' : panelText });
+
     // ROLE MỞ KHÓA KÊNH: tạo role + đặt quyền ẩn/hiện kênh theo cảnh giới (GĐ23).
+    //  Gửi RIÊNG (followUp) để KHÔNG bị cắt cụt cuối tin — luôn thấy 🔒/cảnh báo quyền.
+    let crLines;
     try {
-      const crLines = await channelroles.applyChannelPermissions(interaction.client);
-      results.push(...crLines);
+      crLines = await channelroles.applyChannelPermissions(interaction.client);
     } catch (err) {
       console.error('[setup] channelroles:', err);
-      results.push(`⚠️ Role kênh: lỗi khi đặt quyền (${err.message || err}).`);
+      crLines = [`⚠️ Role kênh: lỗi khi đặt quyền (${err.message || err}).`];
     }
-
-    const text = `🛠️ **Kết quả /setup:**\n${results.join('\n')}`;
-    return interaction.editReply({ content: text.length > 1900 ? text.slice(0, 1900) + '\n… (rút gọn)' : text });
+    if (crLines && crLines.length) {
+      const crText = `🗝️ **Role mở khóa kênh theo cảnh giới:**\n${crLines.join('\n')}`;
+      await interaction.followUp({
+        content: crText.length > 1900 ? crText.slice(0, 1900) + '\n… (rút gọn)' : crText,
+        flags: MessageFlags.Ephemeral,
+      }).catch(() => {});
+    }
+    return;
   },
 };

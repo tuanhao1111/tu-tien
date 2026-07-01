@@ -94,9 +94,9 @@ function hoSo() {
   const e = ui.panelEmbed('hoSo', {
     title: '📜 Hồ Sơ Nhân Vật',
     desc:
-      'Xem mọi thứ về đạo hữu: cảnh giới · chỉ số chiến đấu · 💗 Sinh Mệnh · thuộc tính · trang bị · kỹ năng.\n\n' +
+      'Xem mọi thứ về đạo hữu: cảnh giới · chỉ số chiến đấu · thuộc tính · trang bị · kỹ năng · **Ngự Thú & Thần Thông** (hiện trên thẻ).\n\n' +
       '▸ Cộng 🧬 **điểm thuộc tính** (nhận khi đột phá) · nâng 🎴 **chiêu** (nhận khi độ kiếp).\n' +
-      '▸ 💗 **Liệu Thương** hồi Sinh Mệnh · 🎒 **Túi đồ** · 📖 **Cẩm nang**.',
+      '▸ ⚙️ Menu chức năng: 🛡️ Trang bị · 🎒 Túi đồ · 🏷️ Danh hiệu · 🏆 Thành tựu · 🐉 **Ngự Thú** · 👁️ **Thần Thông** · 📖 Cẩm nang.',
     footer: 'Bấm để mở hồ sơ riêng — hoặc đọc Cẩm Nang hướng dẫn đầy đủ.',
   });
   return { embeds: [e], components: [ui.row(
@@ -114,7 +114,8 @@ function luyenTruong() {
     desc:
       'Đạt **🟡 Kim Đan** để mở khu rèn luyện & farm:\n\n' +
       '🗼 **Thí Luyện Tháp** — leo tháp vô tận, càng cao thưởng càng hậu.\n' +
-      '🗺️ **Bí Cảnh** — thám hiểm theo lượt, rớt nguyên liệu + trang bị (`/bicanh`).\n\n' +
+      '🗺️ **Bí Cảnh** — thám hiểm theo lượt, rớt nguyên liệu + trang bị (`/bicanh`).\n' +
+      '👻 **Truy Tung Nhiếp Hồn** (từ **👶 Nguyên Anh**) — farm 👻 Yêu Hồn Phách + 🍖 thức ăn để **bắt & nuôi Ngự Thú**.\n\n' +
       '🐗 **Săn Yêu** mở SỚM hơn (từ **🌬️ Luyện Khí**) — có kênh **Bãi Săn Yêu** riêng.',
     footer: 'Cày khôn ngoan — Linh Khí Loãng khiến farm quá đà giảm hiệu suất.',
   });
@@ -127,6 +128,21 @@ function luyenTruong() {
 // 🐗 Bãi Săn Yêu — kênh riêng (mở ở Luyện Khí), panel sticky.
 function sanYeu() {
   return require('./commands/luyentruong').sanYeuPanelView();
+}
+
+// 🧭 Du Tiên Đường — Nguyên Thần Xuất Khiếu (mở ở Luyện Hư), panel sticky.
+function duTien() {
+  return require('./commands/dutien').panelView();
+}
+
+// 🐉 Ngự Thú Viên — bạn chiến PvE (mở ở Nguyên Anh), panel sticky.
+function nguThu() {
+  return require('./commands/nguthu').panelView();
+}
+
+// 👁️ Nguyên Thần Điện — Thần Thông (mở ở Hóa Thần), panel sticky.
+function thanThong() {
+  return require('./commands/thanthong').panelView();
 }
 
 // ⚔️ Đấu Pháp Đài — bảng xếp hạng LIVE + khiêu chiến CÔNG KHAI (sticky).
@@ -164,9 +180,10 @@ function shop() {
       '🌰 **Linh Chủng** — hạt giống gieo ở **Linh Điền** (panel Tu Luyện).\n' +
       '🧪 **Nguyên liệu** Bí Cảnh — để **luyện đan**.\n' +
       '🔩 **Tinh Thiết** — để **cường hóa trang bị**.\n' +
-      '💊 **Đan dược** cơ bản — tu vi & độ kiếp.\n\n' +
+      '💊 **Đan dược** cơ bản · 🍖 **Yêu Thú Lương** (nuôi Ngự Thú).\n\n' +
+      '🎰 **Chiêu Hồn Đài** — **bắt Ngự Thú** (gacha): quay bằng LT + 👻 Yêu Hồn Phách, hoặc 🔮 Tiên Ngọc (có pity); hoặc **mua thẳng thú**.\n\n' +
       '_Phường thị KHÔNG bán trang bị — trang bị chỉ từ rớt Bí Cảnh / Tháp / Boss._',
-    footer: 'Bấm để mở quầy của riêng bạn (mua x1/x5/x10).',
+    footer: 'Bấm để mở quầy · 🎰 Chiêu Hồn Đài ở trong quầy (mở ở Nguyên Anh).',
   });
   return { embeds: [e], components: [ui.row(ui.btn('panel_shop', 'Vào Phường Thị', 'primary', { emoji: '🛒' }))] };
 }
@@ -199,6 +216,9 @@ const PANELS = {
   hoSo:        { key: 'hoSo',        name: 'Hồ Sơ',          build: hoSo },
   luyenTruong: { key: 'luyenTruong', name: 'Luyện Trường',   build: luyenTruong },
   sanYeu:      { key: 'sanYeu',      name: 'Bãi Săn Yêu',    build: sanYeu },
+  nguThu:      { key: 'nguThu',      name: 'Ngự Thú Viên',   build: nguThu },
+  thanThong:   { key: 'thanThong',   name: 'Nguyên Thần Điện', build: thanThong },
+  duTien:      { key: 'duTien',      name: 'Du Tiên Đường',  build: duTien },
   dauDai:      { key: 'dauDai',      name: 'Đấu Pháp Đài',   build: dauDai },
   bossTheGioi: { key: 'bossTheGioi', name: 'Boss Thế Giới',  build: bossTheGioi },
   toDoi:       { key: 'toDoi',       name: 'Phó Bản Tổ Đội', build: toDoi },
@@ -226,7 +246,7 @@ for (const [pk, meta] of Object.entries(PANELS)) {
 //  Panel "động" (boss/đấu pháp/BXH) tự đăng ký live ở command tương ứng. Ở đây chỉ
 //  đăng ký các panel TĨNH cần sticky để không bị tin nhắn người chơi đẩy trôi.
 const livepanels = require('./util/livepanels');
-for (const key of ['luyenTruong', 'tuLuyen', 'monPhai', 'shop', 'nhiemVu', 'toDoi', 'loRen', 'sanYeu']) {
+for (const key of ['luyenTruong', 'tuLuyen', 'monPhai', 'shop', 'nhiemVu', 'toDoi', 'loRen', 'sanYeu', 'duTien', 'nguThu', 'thanThong']) {
   if (PANELS[key]) livepanels.register(key, PANELS[key].build, { sticky: true, stickyOnly: true });
 }
 

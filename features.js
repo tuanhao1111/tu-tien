@@ -34,7 +34,12 @@ const FEATURES = [
   { key: 'boss', name: 'Boss Thế Giới', emoji: '🐲', realm: 3, status: 'live', commands: ['boss'], desc: 'Công phạt boss chung toàn server, chia thưởng theo sát thương.' },
   { key: 'bicanh', name: 'Bí Cảnh', emoji: '🗺️', realm: 3, status: 'live', commands: ['bicanh'], desc: 'Thám hiểm bí cảnh, săn yêu thú & cơ duyên (PvE).' },
   { key: 'luyentruong', name: 'Luyện Trường', emoji: '⛰️', realm: 3, status: 'live', commands: ['luyentruong'], desc: 'Linh Điền (vườn idle), Săn Yêu (săn nhanh), Thí Luyện Tháp (leo tháp).' },
-  { key: 'dauphap', name: 'Đấu Pháp', emoji: '⚔️', realm: 4, status: 'live', commands: ['dauphap'], desc: 'Luận Võ Đài — tỉ thí xếp hạng với tu sĩ khác (PvP).' },
+  { key: 'dauphap', name: 'Đấu Pháp', emoji: '⚔️', realm: 2, status: 'live', commands: ['dauphap'], desc: 'Luận Võ Đài — tỉ thí xếp hạng với tu sĩ khác (PvP, mở ở Trúc Cơ).' },
+
+  // --- Hướng chơi cảnh giới cao (GĐ24) ---
+  { key: 'nguthu', name: 'Ngự Thú', emoji: '🐉', realm: 4, status: 'live', commands: ['nguthu'], desc: 'Thu phục yêu thú làm bạn chiến PvE — cộng chỉ số + tung đòn phụ (mở ở Nguyên Anh).' },
+  { key: 'thanthong', name: 'Thần Thông', emoji: '👁️', realm: 5, status: 'live', commands: ['thanthong'], desc: 'Tu luyện Nguyên Thần — mở các Thần Thông cộng chỉ số (dùng cả PvE lẫn PvP, mở ở Hóa Thần).' },
+  { key: 'dutien', name: 'Du Tiên', emoji: '🧭', realm: 6, status: 'live', commands: ['dutien'], desc: 'Nguyên Thần Xuất Khiếu — phái Nguyên Thần đi lịch luyện vùng xa (idle, offline), về nhận cơ duyên.' },
 ];
 
 const byCommand = new Map();

@@ -17,7 +17,7 @@ module.exports = {
       soNhap: 0x55efc4, tuLuyen: 0x6c5ce7, dotPha: 0xfdcb6e, nhiemVu: 0x74b9ff,
       monPhai: 0xe17055, hoSo: 0x0984e3, trangBi: 0xa29bfe, luyenTruong: 0x00b894, loRen: 0xe67e22,
       dauDai: 0xd63031, bossTheGioi: 0x2d3436, bangXepHang: 0xfdcb6e, shop: 0xe84393,
-      toDoi: 0x9b59b6, sanYeu: 0x27ae60,
+      toDoi: 0x9b59b6, sanYeu: 0x27ae60, duTien: 0x5f27cd, nguThu: 0xe58e26, thanThong: 0x9b59b6,
     },
   },
 
@@ -81,12 +81,18 @@ module.exports = {
     autoPermissions: true,   // /setup tự đặt quyền ẩn/hiện kênh (cần bot có Manage Channels + Manage Roles, role bot nằm TRÊN role game)
     // Mỗi mốc: realm cần đạt -> role (tên) -> các KÊNH (key trong channels) role đó mở.
     //  Kênh khởi đầu (soNhap/tuLuyen/nhiemVu/hoSo/vongAmDai) KHÔNG gate — ai cũng thấy.
+    //  ⚠️ Phường Thị (shop) CỐ Ý không gate — nguồn vật phẩm quan trọng cho mọi cảnh giới.
     thresholds: [
       { realm: 1, name: 'Luyện Khí Tu Sĩ',  channelKeys: ['sanYeu', 'bangXepHang'] },
-      { realm: 2, name: 'Trúc Cơ Tu Sĩ',    channelKeys: ['monPhai'] },
-      { realm: 3, name: 'Kim Đan Chân Nhân', channelKeys: ['luyenTruong', 'bossTheGioi', 'toDoi', 'shop', 'loRen'] },
-      { realm: 4, name: 'Nguyên Anh Lão Tổ', channelKeys: ['dauDai'] },
+      { realm: 2, name: 'Trúc Cơ Tu Sĩ',    channelKeys: ['monPhai', 'dauDai'] }, // GĐ24: Đấu Pháp về Trúc Cơ
+      { realm: 3, name: 'Kim Đan Chân Nhân', channelKeys: ['luyenTruong', 'bossTheGioi', 'toDoi', 'loRen'] },
+      // GĐ24: hướng chơi mới theo cảnh giới cao.
+      { realm: 4, name: 'Nguyên Anh Lão Tổ', channelKeys: ['nguThu'] },    // 🐉 Ngự Thú
+      { realm: 5, name: 'Hóa Thần Chân Quân', channelKeys: ['thanThong'] }, // 👁️ Thần Thông
+      { realm: 6, name: 'Luyện Hư Đại Năng',  channelKeys: ['duTien'] },   // 🧭 Du Tiên (Nguyên Thần Xuất Khiếu)
     ],
+    // Kênh LUÔN mở cho mọi người — /setup gỡ lệnh ẩn nếu trước đó lỡ ẩn (vd shop).
+    openChannels: ['shop'],
   },
 
   // --- Tu luyện VẬN CÔNG (/tuluyen): CHỌN thời gian vận công, nhận tu vi SAU đó ---
@@ -168,6 +174,16 @@ module.exports = {
       yeuDanChance: 0.30,         // mỗi hạt 30% kèm 1 Yêu Đan
       seedId: 'linh_chung',       // id hạt giống (1 "nguyên liệu" trong túi, bán ở Shop)
     },
+    // Truy Tung Nhiếp Hồn — farm 👻 Yêu Hồn Phách (tài nguyên bắt/nâng Ngự Thú). Mở ở Nguyên Anh.
+    //  Đánh 1 yêu thú/lượt; thắng -> nhận Yêu Hồn Phách (+ cơ hội thêm). Thua không mất gì.
+    sanHon: {
+      minRealm: 4,                // mở cùng Ngự Thú (Nguyên Anh)
+      cooldownMs: 60 * 1000,      // 60s/lượt
+      foeMult: 1.0,               // yêu hồn ngang bậc người chơi
+      baseYhp: 2,                 // 👻 Yêu Hồn Phách nền mỗi lần thắng
+      bonusChance: 0.4,           // 40% cơ hội +1 nữa
+      foodChance: 0.5,            // 50% cơ hội rớt kèm 🍖 Yêu Thú Lương (1-2)
+    },
     // Săn Yêu — bãi săn nhanh: đánh 1 yêu thú/lượt, cooldown ngắn (đã hạ GĐ16).
     sanYeu: {
       cooldownMs: 30 * 1000,      // 30s (hạ từ 1' — GĐ17)
@@ -190,7 +206,7 @@ module.exports = {
   //  online). Thắng cộng điểm ELO + thưởng nhỏ; thua trừ điểm. Cần gạt cân
   //  bằng combat vẫn ở combat.js/sects.js — PvP chỉ tái dùng engine.
   pvp: {
-    minRealm: 4,                // cảnh giới mở Đấu Pháp (đồng bộ features.dauphap.realm = Nguyên Anh)
+    minRealm: 2,                // cảnh giới mở Đấu Pháp (đồng bộ features.dauphap.realm = Trúc Cơ — GĐ24)
     cooldownMs: 45 * 1000,      // mỗi trận cách nhau 45 giây (đã hạ từ 3' — farm vốn đã bị nerf Linh Khí Loãng)
     matchPool: 8,               // lấy 8 đối thủ gần điểm nhất rồi chọn ngẫu nhiên (đa dạng)
     realmWindow: 1,             // ưu tiên đối thủ chênh tối đa 1 cảnh giới cho công bằng
@@ -254,6 +270,9 @@ module.exports = {
     shop:        process.env.CH_SHOP          || '',  // kênh "phường thị" (shop bán vật phẩm tiêu hao)
     loRen:       process.env.CH_LO_REN        || '',  // kênh "lò rèn" (rèn/cường hóa/nâng bậc trang bị)
     sanYeu:      process.env.CH_SAN_YEU       || '',  // kênh "bãi săn yêu" (săn yêu nhanh — mở ở Luyện Khí)
+    duTien:      process.env.CH_DU_TIEN       || '',  // kênh "du tiên" (Nguyên Thần Xuất Khiếu — idle, mở ở Luyện Hư)
+    nguThu:      process.env.CH_NGU_THU       || '',  // kênh "ngự thú" (bạn chiến PvE — mở ở Nguyên Anh)
+    thanThong:   process.env.CH_THAN_THONG    || '',  // kênh "thần thông" (nhánh tu Nguyên Thần — mở ở Hóa Thần)
     // (GĐ18 BỎ: trangBi -> trong panel Hồ Sơ; dotPha -> trong panel Tu Luyện)
   },
   adminRoleId: process.env.ADMIN_ROLE_ID || '', // role được phép chạy /setup (rỗng = chỉ Manage Guild)
@@ -273,6 +292,9 @@ module.exports = {
     bicanh:      'luyenTruong',
     luyentruong: 'luyenTruong',
     sanyeu:      'sanYeu',
+    dutien:      'duTien',
+    nguthu:      'nguThu',
+    thanthong:   'thanThong',
     dautap:      'luyenTruong',
     dauphap:     'dauDai',
     boss:        'bossTheGioi',
@@ -356,7 +378,8 @@ module.exports = {
     affinityChance: 0.35,   // tỉ lệ 1 món rớt mang tứ tính (hợp ngẫu nhiên 1 phái). 0 = tắt
     affinityBonus: 0.25,    // mặc ĐÚNG phái: +25% chỉ số CỦA CHÍNH MÓN đó (cộng phẳng -> không phá spread)
     // --- Biến thể (variant): món rớt mang tên riêng + cộng 1 chỉ số chủ đề (đa dạng đồ) ---
-    variantChance: 0.45,    // tỉ lệ 1 món rớt mang biến thể (Liệt Hỏa/Hàn Băng/…). 0 = tắt
+    //  8 biến thể (gear.js): Liệt Hỏa/Huyền Thiết/Hậu Thổ/Truy Phong/Linh Uyên/Xích Diễm/U Ảnh/Phá Quân.
+    variantChance: 0.45,    // tỉ lệ 1 món rớt mang biến thể. 0 = tắt
     variantMult: 0.6,       // độ lớn chỉ số biến thể cộng thêm (× độ lớn tham chiếu). Cộng phẳng, tunable
     enhanceMax: 15,         // cường hóa tối đa +15
     enhanceStep: 0.04,      // mỗi cấp cường hóa +4% chỉ số nền của món (max +60%)
@@ -434,6 +457,71 @@ module.exports = {
     affToOwnSect: 0.6,       // 60% món rớt mang tứ tính ĐÚNG phái người nhận (còn lại ngẫu nhiên)
     lobbyTtlMs: 15 * 60 * 1000, // dọn tổ đội lập mà không vào trận sau 15'
     raidTtlMs: 30 * 60 * 1000,  // dọn trận phó bản bỏ dở sau 30'
+  },
+
+  // --- NGUYÊN THẦN XUẤT KHIẾU — DU TIÊN (dutien.js): hướng chơi IDLE/offline (mở ở Luyện Hư) ---
+  //  Nguyên Thần rời thân đi "lịch luyện" tới vùng xa: chọn điểm đến (2h/4h/8h), đủ giờ
+  //  (kể cả offline) thì Nguyên Thần về, thu nguyên liệu hiếm + linh thạch + tu vi + cơ hội
+  //  rớt trang bị & Tiên Ngọc. Mỗi lúc CHỈ 1 chuyến (như Linh Điền). Điểm đến mở dần theo
+  //  cảnh giới. Catalog điểm đến ở dutien.js; đây là cần gạt thưởng.
+  dutien: {
+    enabled: true,
+    minRealm: 6,              // mở ở 🌀 Luyện Hư (Nguyên Thần đủ mạnh để viễn du)
+    stonesPerHour: 70,        // linh thạch/giờ × rewardMult điểm đến × (1+0.08×bậc)
+    tuViPerHour: 48,          // tu vi/giờ × rewardMult × (1+0.08×bậc)  (đi qua addTuVi -> vẫn dính Linh Khí Loãng)
+    matPerTrip: 2,            // số nguyên liệu NỀN mỗi chuyến (× rewardMult, làm tròn)
+    gearChance: 0.55,         // cơ hội rớt 1 trang bị mỗi chuyến (rarityBoost theo điểm đến)
+    premiumChancePerHour: 0.02, // cơ hội 🔮 Tiên Ngọc theo từng giờ chuyến đi (trần ~25%)
+  },
+
+  // --- NGỰ THÚ (petbeasts.js): bạn chiến PvE (mở ở Nguyên Anh) ---
+  //  Thu phục yêu thú -> luyện cấp -> trang bị 1 con. Con đang theo CỘNG CHỈ SỐ PHẲNG
+  //  (qua kênh gearBonus) + cơ hội tung "đòn phụ" mỗi vòng. Áp CẢ PvE (bí cảnh/săn
+  //  yêu/tháp/boss/phó bản/đấu tập) LẪN PvP (Đấu Pháp — đối xứng, cả hai đấu thủ đều
+  //  mang thú của mình). GĐ24: bật cho PvP theo yêu cầu chủ dự án.
+  pet: {
+    enabled: true,
+    minRealm: 4,             // mở ở 👶 Nguyên Anh
+    maxLevel: 15,            // cấp tối đa mỗi thú (GĐ25)
+    levelStonesBase: 300,    // (cũ — không còn dùng; nâng cấp giờ bằng CHO ĂN)
+    strikePerLevel: 0.02,    // mỗi cấp +power đòn phụ của thú
+    // --- CHO ĂN / ĐỘT PHÁ CẤP / TIẾN HÓA (GĐ25 #11) ---
+    feed: {
+      foodId: 'yeu_thu_luong', // 🍖 thức ăn (mua Shop / rớt Truy Tung)
+      foodExp: 34,             // +EXP mỗi lần cho ăn
+      feedYhp: 2,              // 👻 Yêu Hồn Phách tốn mỗi lần cho ăn
+      expBase: 40, expPerLevel: 22, // EXP cần lên cấp = expBase + expPerLevel×cấp
+      breakBase: 1.0, breakDropPerLevel: 0.06, breakMin: 0.35, // tỉ lệ ĐỘT PHÁ = clamp(base - drop×cấp)
+      breakFailKeepPct: 0.5,   // trượt: EXP còn 50% (dùng bùa -> giữ 100%)
+      charmBonus: 0.30,        // 🪬 Ngự Thú Phù: +30% tỉ lệ đột phá + chống mất EXP khi trượt
+      evoLevels: [5, 10],      // mốc TIẾN HÓA hình dạng (ảnh pet_<key>_e1 / _e2)
+    },
+    // --- GACHA BẮT THÚ (Chiêu Hồn Đài ở Shop) — GĐ25 ---
+    //  2 cách quay: LT + Yêu Hồn Phách (KHÔNG pity) · Tiên Ngọc (tốn nhiều, CÓ pity).
+    //  Tỉ lệ Thần CỰC THẤP -> buộc cày (đổi/mua thú thẳng ở shop giá cao). Trùng -> trả YHP.
+    gacha: {
+      ltStones: 800, ltYhp: 5,        // 1 lần quay thường = 800 LT + 5 👻 Yêu Hồn Phách
+      premiumTienngoc: 3,             // 1 lần quay cao cấp = 3 🔮 Tiên Ngọc (tốn nhiều hơn)
+      pityPremium: 60,                // 60 lần quay TIÊN NGỌC không ra Thần -> lần kế CHẮC CHẮN Thần
+      ratesLT:      { pham: 0.739, linh: 0.22, tien: 0.04, than: 0.001 },  // Thần 0.1% (cực thấp, no pity)
+      ratesPremium: { pham: 0.55, linh: 0.30, tien: 0.13, than: 0.02 },    // Thần 2% + có pity
+      dupYhp: { pham: 2, linh: 6, tien: 15, than: 50 },                    // trùng -> trả Yêu Hồn Phách theo bậc
+    },
+  },
+
+  // --- THẦN THÔNG (thanthong.js): nhánh tu NGUYÊN THẦN thứ 2 (mở ở Hóa Thần) ---
+  //  Nuôi "Nguyên Thần" lên cấp (tốn linh thạch + nguyên liệu) -> mở dần các Thần Thông
+  //  (buff chỉ số PHẲNG). Trang bị tối đa N Thần Thông -> cộng vào combat CẢ PvE LẪN PvP
+  //  (đối xứng theo đầu tư mỗi người). Catalog ở thanthong.js; đây là cần gạt.
+  thanthong: {
+    enabled: true,
+    minRealm: 5,             // mở ở ✨ Hóa Thần
+    maxLevel: 8,             // cấp Nguyên Thần tối đa (mỗi cấp mở 1 Thần Thông)
+    levelStonesBase: 500,    // chi phí lên cấp Nguyên Thần = base × cấp × (1+0.06×bậc)
+    levelMatId: 'hu_tinh',   // nguyên liệu nuôi Nguyên Thần
+    levelMatPerLevel: 2,     // số nguyên liệu mỗi lần lên cấp (× cấp)
+    slotsBase: 1,            // số Thần Thông trang bị = base + floor((cấp-1)/3), trần slotsMax
+    slotsMax: 3,
   },
 
   // --- Công thức tu vi cần để lên 1 bậc ---

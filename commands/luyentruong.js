@@ -38,7 +38,8 @@ function buildMe(player, username) {
     attrs: db.getAttributes(player),
     skillLevels: db.getSkillLevels(player),
     stagesSinceJoin: Math.max(0, cult.globalStage(player.realm, player.tier) - (player.sect_join_stage || 0)),
-    gearBonus: db.combatGearBonus(player),
+    gearBonus: db.combatGearBonus(player, true), // PvE -> gộp Ngự Thú
+    pet: db.petStrike(player),                   // đòn phụ ngự thú (PvE)
   });
 }
 
@@ -70,7 +71,14 @@ function hubView(player) {
     new ButtonBuilder().setCustomId('farm_thap').setLabel('🗼 Thí Luyện Tháp').setStyle(ButtonStyle.Danger),
     new ButtonBuilder().setCustomId('panel_bicanh').setLabel('🗺️ Bí Cảnh').setStyle(ButtonStyle.Success),
   );
-  return { embeds: [e], components: [row] };
+  const rows = [row];
+  // Truy Tung Nhiếp Hồn (farm Yêu Hồn Phách) — mở ở Nguyên Anh (cùng Ngự Thú).
+  if ((player.realm || 0) >= (config.farm.sanHon.minRealm || 4)) {
+    rows.push(new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('farm_sanhon').setLabel('👻 Truy Tung Nhiếp Hồn').setStyle(ButtonStyle.Secondary),
+    ));
+  }
+  return { embeds: [e], components: rows };
 }
 
 // ---------- LINH ĐIỀN (GĐ17: TRỒNG TRỌT — mua hạt giống về tự gieo) ----------
@@ -185,6 +193,34 @@ function startSanYeuRefresh(interaction, userId, p) {
   });
 }
 
+// ---------- TRUY TUNG NHIẾP HỒN (farm 👻 Yêu Hồn Phách — bắt/nâng Ngự Thú) ----------
+function sanHonView(player, now) {
+  const cfg = config.farm.sanHon;
+  const left = cfg.cooldownMs - (now - (player.sanhon_ts || 0));
+  const e = new EmbedBuilder().setColor(ui.chanColor('nguThu')).setTitle('👻 Truy Tung Nhiếp Hồn')
+    .setDescription('Truy lùng yêu thú lang thang, nhiếp lấy **👻 Yêu Hồn Phách** — tài nguyên **bắt & nâng Ngự Thú**. Thua không mất gì.');
+  const row = new ActionRowBuilder();
+  if (left > 0) e.addFields({ name: '⏳ Hồi sức', value: `Nghỉ thêm **${ui.dur(left)}** rồi truy tung tiếp. _(tự cập nhật)_` });
+  else row.addComponents(new ButtonBuilder().setCustomId('farm_sanhon_fight').setLabel('⚔️ Truy tung ngay').setStyle(ButtonStyle.Primary));
+  return { embeds: [e], components: row.components.length ? [row] : [] };
+}
+function sanHonLocked(interaction, p) {
+  const minR = config.farm.sanHon.minRealm || 0;
+  if ((p.realm || 0) >= minR) return false;
+  const r = cult.REALMS[minR];
+  interaction.reply({ content: `🔒 **Truy Tung Nhiếp Hồn** mở ở **${r.emoji} ${r.name}** (cùng Ngự Thú).`, flags: MessageFlags.Ephemeral }).catch(() => {});
+  return true;
+}
+function startSanHonRefresh(interaction, userId, p) {
+  const cd = config.farm.sanHon.cooldownMs;
+  if (cd - (Date.now() - (p.sanhon_ts || 0)) <= 0) return;
+  autorefresh.start(interaction, () => {
+    const np = db.getPlayer(userId); if (!np) return null;
+    const left = cd - (Date.now() - (np.sanhon_ts || 0));
+    return { view: sanHonView(np, Date.now()), done: left <= 0 };
+  });
+}
+
 // ---------- THÍ LUYỆN THÁP ----------
 function thapView(player, now) {
   const left = config.farm.thap.cooldownMs - (now - (player.thap_ts || 0));
@@ -237,6 +273,28 @@ fight.registerOutcome('sanyeu', async (interaction, f) => {
   e.setFooter({ text: `Cooldown săn: ${ui.dur(config.farm.sanYeu.cooldownMs)}` });
   const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('farm_sanyeu').setLabel('🐗 Săn tiếp').setStyle(ButtonStyle.Secondary));
   if (kyngoTriggered) row.addComponents(new ButtonBuilder().setCustomId('panel_kyngo').setLabel('🎲 Xem kỳ ngộ').setStyle(ButtonStyle.Success));
+  return { content: '', embeds: [e], components: [row] };
+});
+
+// --- Outcome khi trận TRUY TUNG NHIẾP HỒN kết thúc -> thưởng 👻 Yêu Hồn Phách ---
+fight.registerOutcome('sanhon', async (interaction, f) => {
+  const userId = interaction.user.id;
+  const win = f.winner === 'A';
+  const e = new EmbedBuilder()
+    .setColor(win ? config.colors.success : config.colors.danger)
+    .setTitle('👻 Truy Tung Nhiếp Hồn — Kết Thúc')
+    .setDescription(`🆚 **${f.B.name}** — ${win ? `🏆 **Nhiếp hồn thành công sau ${f.round} hiệp!**` : `☠️ **Thất bại** sau ${f.round} hiệp (không mất gì)`}`);
+  if (win) {
+    const cfg = config.farm.sanHon;
+    const yhp = (cfg.baseYhp || 1) + (Math.random() < (cfg.bonusChance || 0) ? 1 : 0);
+    const food = Math.random() < (cfg.foodChance || 0) ? (1 + (Math.random() < 0.3 ? 1 : 0)) : 0;
+    const gain = { yeu_hon_phach: yhp };
+    if (food) gain.yeu_thu_luong = food;
+    db.addMaterials(userId, gain);
+    e.addFields({ name: '🎁 Thu hoạch', value: `👻 **+${yhp} Yêu Hồn Phách**${food ? ` · 🍖 **+${food} Yêu Thú Lương**` : ''} _(bắt & nâng Ngự Thú)_` });
+  }
+  e.setFooter({ text: `Cooldown: ${ui.dur(config.farm.sanHon.cooldownMs)}` });
+  const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('farm_sanhon').setLabel('👻 Truy tung tiếp').setStyle(ButtonStyle.Secondary));
   return { content: '', embeds: [e], components: [row] };
 });
 
@@ -355,6 +413,35 @@ module.exports = {
       const ctx = {
         type: 'sanyeu', title: '🐗 Săn Yêu Thú',
         footer: `Đánh theo lượt · ⚡ Đánh nhanh để kết trận · cooldown ${ui.dur(config.farm.sanYeu.cooldownMs)}`,
+        thumbSrc: assets.src('foe_wild'),
+      };
+      return fight.start(interaction, me, foe.c, ctx, { useUpdate: true });
+    },
+
+    // --- Truy Tung Nhiếp Hồn (farm Yêu Hồn Phách) ---
+    async farm_sanhon(interaction) {
+      const userId = interaction.user.id;
+      const p = db.getPlayer(userId);
+      if (!p) return;
+      if (sanHonLocked(interaction, p)) return;
+      await interaction.reply({ ...sanHonView(p, Date.now()), flags: MessageFlags.Ephemeral });
+      startSanHonRefresh(interaction, userId, p);
+    },
+    async farm_sanhon_fight(interaction) {
+      const userId = interaction.user.id;
+      autorefresh.stop(userId);
+      const p = db.getPlayer(userId);
+      if (!p) return;
+      if (sanHonLocked(interaction, p)) return;
+      const now = Date.now();
+      const left = config.farm.sanHon.cooldownMs - (now - (p.sanhon_ts || 0));
+      if (left > 0) return interaction.update(sanHonView(p, now));
+      db.setSanHonTs(userId, now);
+      const me = buildMe(p, interaction.user.username);
+      const foe = farm.buildWildFoe(p.realm, p.tier);
+      const ctx = {
+        type: 'sanhon', title: '👻 Truy Tung Nhiếp Hồn',
+        footer: `Đánh theo lượt · ⚡ Đánh nhanh · cooldown ${ui.dur(config.farm.sanHon.cooldownMs)}`,
         thumbSrc: assets.src('foe_wild'),
       };
       return fight.start(interaction, me, foe.c, ctx, { useUpdate: true });

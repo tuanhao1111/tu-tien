@@ -74,19 +74,28 @@ function statSubCol(title, rows) {
     ...rows.map((r) => statRow(r.icon, r.label, r.value, r.color)));
 }
 
-// --- DẢI CHIÊU THỨC: nội công (viền vàng) + chiêu chủ động đang trang bị (viền vàng mờ) ---
+// --- DẢI CHIÊU THỨC & ĐỒNG HÀNH: nội tại (vàng) · chiêu chủ động (vàng mờ) ·
+//  Ngự Thú (cam) · Thần Thông (tím). Ô màu khác nhau theo `type` để phân nhóm rõ. ---
+const SKILL_STYLE = {
+  passive:   { bg: hexToRgba('#d4af37', 0.16), bd: GOLD },
+  active:    { bg: BOX,                          bd: GOLD_SOFT },
+  pet:       { bg: hexToRgba('#e58e26', 0.20), bd: 'rgba(229,142,38,0.75)' },
+  thanthong: { bg: hexToRgba('#9b59b6', 0.22), bd: 'rgba(155,89,182,0.8)' },
+};
 function skillStrip(skills) {
   if (!skills || !skills.length) return null;
-  const box = (s) => h('div', { style: {
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      width: '42px', height: '42px', margin: '3px',
-      backgroundColor: s.passive ? hexToRgba('#d4af37', 0.16) : BOX,
-      border: `2px solid ${s.passive ? GOLD : GOLD_SOFT}`, borderRadius: '10px',
-    } }, s.icon
-      ? h('img', { src: s.icon, width: 36, height: 36, style: { borderRadius: '7px' } })
-      : h('div', { style: { display: 'flex', fontSize: '20px' } }, s.emoji));
+  const box = (s) => {
+    const st = SKILL_STYLE[s.type] || (s.passive ? SKILL_STYLE.passive : SKILL_STYLE.active);
+    return h('div', { style: {
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: '42px', height: '42px', margin: '3px',
+        backgroundColor: st.bg, border: `2px solid ${st.bd}`, borderRadius: '10px',
+      } }, s.icon
+        ? h('img', { src: s.icon, width: 36, height: 36, style: { borderRadius: '7px' } })
+        : h('div', { style: { display: 'flex', fontSize: '20px' } }, s.emoji));
+  };
   return h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', width: '178px', marginTop: '14px' } },
-    h('div', { style: { display: 'flex', fontSize: '13px', fontWeight: 700, color: '#8fa0bf', letterSpacing: '1px', marginBottom: '4px' } }, '🎴 CHIÊU THỨC'),
+    h('div', { style: { display: 'flex', fontSize: '13px', fontWeight: 700, color: '#8fa0bf', letterSpacing: '1px', marginBottom: '4px' } }, '🎴 CHIÊU & ĐỒNG HÀNH'),
     h('div', { style: { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' } }, ...skills.map(box)),
   );
 }

@@ -14,6 +14,7 @@ const STOCK = [
   { id: 'long_can',      cat: 'mat',    price: 140 },
   { id: 'hu_tinh',       cat: 'mat',    price: 300 },
   { id: 'co_phach',      cat: 'mat',    price: 480 },
+  { id: 'yeu_thu_luong', cat: 'mat',    price: 45 },  // 🍖 thức ăn Ngự Thú
   { id: 'refine',        cat: 'refine', price: 50 },
   { id: 'tu_khi_dan',    cat: 'pill',   price: 70 },
   { id: 'boi_nguyen_dan', cat: 'pill',  price: 150 },

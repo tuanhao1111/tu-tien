@@ -22,6 +22,7 @@ const bicanh = require('../bicanh');
 const alchemy = require('../alchemy');
 const equipment = require('../equipment');
 const gear = require('../gear');
+const petbeasts = require('../petbeasts');
 const health = require('../health');
 const ui = require('../util/ui');
 const assets = require('../assets'); // ảnh banner cảnh giới (tự bỏ qua nếu chưa có)
@@ -161,6 +162,14 @@ function profileComponents(p) {
   ];
   if (p.sect) {
     opts.splice(2, 0, { label: 'Quản lý chiêu', description: 'Xem & trang bị tối đa 3 chiêu chủ động', emoji: '🎴', value: 'skill' });
+  }
+  // Ngự Thú: quản lý ngay trong Hồ Sơ (mở ở Nguyên Anh).
+  if ((p.realm || 0) >= ((config.pet && config.pet.minRealm) || 4)) {
+    opts.splice(p.sect ? 4 : 3, 0, { label: 'Ngự Thú', description: 'Thu phục & nuôi bạn chiến (dùng cả PvE lẫn PvP)', emoji: '🐉', value: 'nguthu' });
+  }
+  // Thần Thông: tu luyện Nguyên Thần ngay trong Hồ Sơ (mở ở Hóa Thần).
+  if ((p.realm || 0) >= ((config.thanthong && config.thanthong.minRealm) || 5)) {
+    opts.push({ label: 'Thần Thông', description: 'Tu Nguyên Thần & vận Thần Thông (PvE + PvP)', emoji: '👁️', value: 'thanthong' });
   }
   if (health.enabled()) {
     const vit = db.getVit(p);
@@ -354,14 +363,22 @@ async function profileCardData(user, p) {
   });
   const armorTier = bySlot.armor ? bySlot.armor.r : null; // cho biến thể ảnh theo giáp
 
-  // --- Chiêu thức: nội công (bị động phái) + tối đa 3 chiêu chủ động đang trang bị ---
-  //  Icon dùng ảnh skill_<id> (dataUri cho Satori); thiếu ảnh -> fallback emoji chiêu.
+  // --- Chiêu thức & đồng hành: nội tại (bị động phái) + chiêu chủ động đang trang bị
+  //  + Ngự Thú đang theo + Thần Thông đang vận. Icon = ảnh; thiếu -> fallback emoji.
+  //  type: 'passive'(nội tại) | 'active'(chiêu) | 'pet'(thú) | 'thanthong' -> màu ô khác nhau.
   const skillData = [];
   const passive = p.sect ? skills.passiveForSect(p.sect) : null;
-  if (passive) skillData.push({ icon: assets.dataUri(`skill_${passive.id}`), emoji: passive.emoji || '🔰', passive: true });
+  if (passive) skillData.push({ icon: assets.dataUri(`skill_${passive.id}`), emoji: passive.emoji || '🔰', type: 'passive' });
   for (const id of db.getEquipped(p).slice(0, 3)) {
     const s = skills.getSkill(id);
-    skillData.push({ icon: assets.dataUri(`skill_${id}`), emoji: s ? s.emoji : '🎴', passive: false });
+    skillData.push({ icon: assets.dataUri(`skill_${id}`), emoji: s ? s.emoji : '🎴', type: 'active' });
+  }
+  // Ngự Thú đang theo (đòn phụ) — ô riêng màu cam.
+  const activePet = db.getActivePet(p);
+  if (activePet) skillData.push({ icon: assets.dataUri(petbeasts.imageKey(activePet.key, activePet.lv)), emoji: activePet.beast.emoji, type: 'pet' });
+  // Thần Thông đang vận (GĐ25 — Hóa Thần): thêm ô type:'thanthong' khi build xong.
+  for (const t of (db.getActiveThanThong ? db.getActiveThanThong(p) : [])) {
+    skillData.push({ icon: assets.dataUri(`thanthong_${t.id}`), emoji: t.emoji || '👁️', type: 'thanthong' });
   }
 
   // --- Bảng thuộc tính 2 cột con: [chỉ số chiến đấu] | [thuộc tính cộng điểm] ---
@@ -562,7 +579,7 @@ module.exports = {
         if (!p) return interaction.reply({ content: 'Đạo hữu chưa nhập đạo!', flags: MessageFlags.Ephemeral });
         return interaction.reply({ ...achievementsView(p), flags: MessageFlags.Ephemeral });
       }
-      const route = { respec: 'attr_respec', skill: 'skill_open', trangbi: 'panel_trangbi', bag: 'bag_open', heal: 'heal_rest' }[v];
+      const route = { respec: 'attr_respec', skill: 'skill_open', trangbi: 'panel_trangbi', bag: 'bag_open', heal: 'heal_rest', nguthu: 'panel_nguthu', thanthong: 'panel_thanthong' }[v];
       const h = route && interaction.client.buttons.get(route);
       if (h) return h(interaction);
       return interaction.deferUpdate().catch(() => {});
