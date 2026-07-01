@@ -165,9 +165,9 @@ const SECTIONS = [
     title: '🎲 Kỳ Ngộ — Cơ Duyên Bất Ngờ',
     body:
       'Kỳ ngộ là **sự kiện phiêu lưu ngẫu nhiên** — nguồn tu vi / linh thạch / nguyên liệu phụ, rất hữu ích **giai đoạn đầu**. Mỗi kỳ ngộ cho **chọn 1 hướng xử lý**: gan dạ thì lời to, đôi khi cũng có rủi ro nhỏ.\n\n' +
-      `🎯 **Cách gặp kỳ ngộ:**\n` +
-      `• Bấm **🎲 Kỳ ngộ** ở panel **Tu Luyện** (hoặc \`/kyngo\`).\n` +
-      `• **Tự ập tới** khi đi **săn yêu** thắng trận, hoặc khi **tiến triển cốt truyện** (cơ hội ~${Math.round((config.kyngo.triggerChance || 0) * 100)}%).\n\n` +
+      `🎯 **Cách gặp kỳ ngộ:** kỳ ngộ **KHÔNG tự bấm để nhận** — nó **tự ập tới ngẫu nhiên** (cơ hội ~${Math.round((config.kyngo.triggerChance || 0) * 100)}%) khi:\n` +
+      `• **Thu hoạch tu luyện** hoặc **xuất quan bế quan**.\n` +
+      `• Đi **săn yêu** thắng trận, hoặc **tiến triển cốt truyện**.\n\n` +
       `⏳ Sau mỗi lần **nhận thưởng** kỳ ngộ phải nghỉ **${Math.round((config.kyngo.cooldownMs || 0) / 60000)} phút** (đang nghỉ thì kỳ ngộ KHÔNG tự ập tới). Chỉ xem sự kiện thì miễn phí — bấm chọn mới tính cooldown.`,
   },
   {

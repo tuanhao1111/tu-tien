@@ -60,7 +60,23 @@ async function maybeFollowUp(interaction, userId) {
   } catch (_) { return false; }
 }
 
-// Mở 1 kỳ ngộ (hoặc báo cooldown).
+// /kyngo giờ KHÔNG tự mở kỳ ngộ nữa — chỉ báo cơ chế "tự ập tới ngẫu nhiên".
+function infoView(p, now = Date.now()) {
+  const left = cdLeft(p, now);
+  const e = new EmbedBuilder().setColor(config.colors.gold)
+    .setTitle('🎲 Kỳ Ngộ — Cơ Duyên Bất Ngờ')
+    .setDescription(
+      'Kỳ ngộ **không cầu mà tới** — không thể tự mở, mà **tự ập tới ngẫu nhiên** trong lúc:\n' +
+      '🧘 **Thu hoạch tu luyện** · 🚪 **Xuất quan bế quan**\n' +
+      '🐗 **Săn yêu thắng trận** · 📖 **Tiến triển cốt truyện**\n\n' +
+      (left > 0
+        ? `⏳ Vừa trải qua một kỳ ngộ — đang nghỉ chân, cơ duyên mới sẽ tới sau **${fmtDur(left)}**.`
+        : '✨ Đang trong trạng thái có thể gặp kỳ ngộ — cứ chuyên tâm tu hành, cơ duyên ắt tới!'))
+    .setFooter({ text: `Cơ hội mỗi hoạt động ~${Math.round((config.kyngo.triggerChance || 0) * 100)}% · nghỉ ${Math.round((config.kyngo.cooldownMs || 0) / 60000)} phút sau mỗi lần nhận thưởng.` });
+  return { embeds: [e], components: [] };
+}
+
+// Mở 1 kỳ ngộ (hoặc báo cooldown) — CHỈ dùng cho nút "Xem kỳ ngộ" sau khi trúng trigger ngẫu nhiên.
 async function open(interaction, useUpdate) {
   const p = await requireUnlocked(interaction);
   if (!p) return;
@@ -72,8 +88,12 @@ async function open(interaction, useUpdate) {
 }
 
 module.exports = {
-  data: new SlashCommandBuilder().setName('kyngo').setDescription('Kỳ Ngộ — gặp sự kiện phiêu lưu ngẫu nhiên, tìm cơ duyên.'),
-  async execute(interaction) { return open(interaction, false); },
+  data: new SlashCommandBuilder().setName('kyngo').setDescription('Kỳ Ngộ — cơ duyên tự ập tới ngẫu nhiên khi tu luyện, xem cơ chế.'),
+  async execute(interaction) {
+    const p = await requireUnlocked(interaction);
+    if (!p) return;
+    return interaction.reply({ ...infoView(p, Date.now()), flags: MessageFlags.Ephemeral });
+  },
   // dùng cho săn yêu / cốt truyện gọi kỳ ngộ ập tới.
   rollTrigger, maybeFollowUp, eventView,
 
@@ -112,7 +132,7 @@ module.exports = {
       const e = new EmbedBuilder().setColor(config.colors.gold)
         .setTitle(`${ev.emoji} ${ev.title}`)
         .setDescription(`_${choice.reply}_\n\n${result.text}\n\n**Kết quả:** ${lines.join(' · ')}`)
-        .setFooter({ text: `Kỳ ngộ tiếp theo sau ${fmtDur(config.kyngo.cooldownMs)}. Gõ /kyngo hoặc bấm Kỳ Ngộ ở panel Tu Luyện.` });
+        .setFooter({ text: `Kỳ ngộ tiếp theo sau ${fmtDur(config.kyngo.cooldownMs)}. Cứ tu luyện · bế quan · săn yêu — cơ duyên sẽ tự ập tới.` });
       return interaction.update({ embeds: [e], components: [] }).catch(() => {});
     },
   },

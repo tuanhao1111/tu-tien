@@ -61,24 +61,19 @@ function hubView(player) {
     .setTitle('⛰️ Luyện Trường')
     .setDescription(
       'Chọn nơi rèn luyện & farm tài nguyên:\n\n' +
-      `🐗 **Săn Yêu** — đánh nhanh 1 yêu hoang kiếm linh thạch + tu vi (cooldown ${ui.dur(config.farm.sanYeu.cooldownMs)}).\n` +
       '🗼 **Thí Luyện Tháp** — leo tháp vô tận, thắng thì lên tầng, thưởng càng cao.\n' +
-      '🗺️ **Bí Cảnh** — thám hiểm theo lượt (gõ `/bicanh`).',
+      '🗺️ **Bí Cảnh** — thám hiểm theo lượt (gõ `/bicanh`).\n' +
+      `👻 **Truy Tung Nhiếp Hồn** — farm 👻 Yêu Hồn Phách + 🍖 thức ăn nuôi **Ngự Thú** (mở ở **${(cult.REALMS[config.farm.sanHon.minRealm || 4] || {}).name || 'Nguyên Anh'}**).\n\n` +
+      '🐗 **Săn Yêu** nay có **kênh Bãi Săn Yêu riêng** (mở sớm từ Luyện Khí) — qua đó săn nhé.',
     )
     .setFooter({ text: `🏅 Tháp: tầng cao nhất ${player.thap_best || 0}` });
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('farm_sanyeu').setLabel('🐗 Săn Yêu').setStyle(ButtonStyle.Primary),
     new ButtonBuilder().setCustomId('farm_thap').setLabel('🗼 Thí Luyện Tháp').setStyle(ButtonStyle.Danger),
     new ButtonBuilder().setCustomId('panel_bicanh').setLabel('🗺️ Bí Cảnh').setStyle(ButtonStyle.Success),
+    // Truy Tung Nhiếp Hồn (farm Yêu Hồn Phách) — LUÔN hiện; bấm khi chưa tới Nguyên Anh thì báo 🔒.
+    new ButtonBuilder().setCustomId('farm_sanhon').setLabel('👻 Truy Tung Nhiếp Hồn').setStyle(ButtonStyle.Secondary),
   );
-  const rows = [row];
-  // Truy Tung Nhiếp Hồn (farm Yêu Hồn Phách) — mở ở Nguyên Anh (cùng Ngự Thú).
-  if ((player.realm || 0) >= (config.farm.sanHon.minRealm || 4)) {
-    rows.push(new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('farm_sanhon').setLabel('👻 Truy Tung Nhiếp Hồn').setStyle(ButtonStyle.Secondary),
-    ));
-  }
-  return { embeds: [e], components: rows };
+  return { embeds: [e], components: [row] };
 }
 
 // ---------- LINH ĐIỀN (GĐ17: TRỒNG TRỌT — mua hạt giống về tự gieo) ----------

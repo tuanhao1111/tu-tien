@@ -11,6 +11,7 @@ const cult = require('../cultivation');
 const dampen = require('../dampen');
 const autorefresh = require('../util/autorefresh');
 const coach = require('../util/coach');
+const kyngoCmd = require('./kyngo'); // kỳ ngộ TỰ ập tới ngẫu nhiên sau khi xuất quan
 
 function fmtDur(ms) {
   const totalMin = Math.max(0, Math.floor(ms / 60000));
@@ -166,12 +167,13 @@ module.exports = {
       const need = cult.tuViNeeded(after.realm, after.tier);
       coach.maybeNotifyReady(db, interaction.user, after); // DM nhắc nếu vừa đủ tu vi đột phá
       const note = dampen.tuViNote(res);
-      return interaction.followUp({
+      await interaction.followUp({
         content: `🌅 Xuất quan sau **${fmtDur(h.elapsedMs)}** bế quan: **+${res.gained} tu vi**! ` +
           (after.tu_vi >= need ? '⚡ **Đủ tu vi rồi — qua Đột Phá Đường để đột phá!**' : '') +
           (note ? `\n${note}` : ''),
         flags: MessageFlags.Ephemeral,
       });
+      return kyngoCmd.maybeFollowUp(interaction, userId); // 🎲 cơ hội Kỳ Ngộ tự ập tới
     },
   },
 };

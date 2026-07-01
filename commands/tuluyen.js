@@ -14,6 +14,7 @@ const cult = require('../cultivation');
 const dampen = require('../dampen');
 const autorefresh = require('../util/autorefresh');
 const coach = require('../util/coach');
+const kyngoCmd = require('./kyngo'); // kỳ ngộ TỰ ập tới ngẫu nhiên sau khi thu hoạch tu luyện
 
 function fmtDur(ms) {
   const totalMin = Math.max(0, Math.floor(ms / 60000));
@@ -122,7 +123,8 @@ function tuLuyenView(p, username, now) {
       `🧘 **Vận Công** — chọn **mốc thời gian** bên dưới để nhập định, nhận **~${config.cultivate.ratePerMin} tu vi/phút** (tính cả khi offline; thu sớm vẫn nhận một phần).\n\n` +
       '**Cách tu hành khác** _(nút bên dưới):_\n' +
       `🎙️ Voice — ngồi kênh thoại ≥${v.minCompany || 2} người tích **${v.ratePerMin || 3}/phút**　·　🚪 Bế quan — tích lâu dài kể cả offline\n` +
-      '💊 Luyện đan — chế đan dược (Kim Đan)　·　🎲 Kỳ ngộ — sự kiện phiêu lưu tìm cơ duyên',
+      '💊 Luyện đan — chế đan dược (Kim Đan)\n\n' +
+      '🎲 _Trong lúc tu luyện, đôi khi **Kỳ Ngộ** bất ngờ tự ập tới — cơ duyên không cầu mà tới._',
     )
     .setFooter({ text: 'Bấm số phút để vận công · các nút dưới cho cách tu hành khác.' });
 
@@ -138,7 +140,6 @@ function tuLuyenView(p, username, now) {
     new ButtonBuilder().setCustomId('cultivate_voice_on').setLabel('Voice').setStyle(ButtonStyle.Secondary).setEmoji('🎙️'),
     new ButtonBuilder().setCustomId('panel_seclude').setLabel('Bế quan').setStyle(ButtonStyle.Secondary).setEmoji('🚪'),
     new ButtonBuilder().setCustomId('panel_luyendan').setLabel('Luyện đan').setStyle(ButtonStyle.Success).setEmoji('💊'),
-    new ButtonBuilder().setCustomId('panel_kyngo').setLabel('Kỳ ngộ').setStyle(ButtonStyle.Success).setEmoji('🎲'),
   );
   return { embeds: [e], components: [durRow, actRow] };
 }
@@ -219,12 +220,13 @@ module.exports = {
       const need = cult.tuViNeeded(after.realm, after.tier);
       coach.maybeNotifyReady(db, interaction.user, after); // DM nhắc nếu vừa đủ tu vi đột phá
       const note = dampen.tuViNote(res);
-      return interaction.followUp({
+      await interaction.followUp({
         content: `🧺 Xuất công sau **${ci.effMin} phút** vận công: **+${res.gained} tu vi**! ` +
           (after.tu_vi >= need ? '⚡ **Đủ tu vi rồi — qua Đột Phá Đường để đột phá!**' : '') +
           (note ? `\n${note}` : ''),
         flags: MessageFlags.Ephemeral,
       });
+      return kyngoCmd.maybeFollowUp(interaction, userId); // 🎲 cơ hội Kỳ Ngộ tự ập tới
     },
 
     // Bật chế độ Voice.

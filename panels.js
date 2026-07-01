@@ -185,7 +185,10 @@ function shop() {
       '_Phường thị KHÔNG bán trang bị — trang bị chỉ từ rớt Bí Cảnh / Tháp / Boss._',
     footer: 'Bấm để mở quầy · 🎰 Chiêu Hồn Đài ở trong quầy (mở ở Nguyên Anh).',
   });
-  return { embeds: [e], components: [ui.row(ui.btn('panel_shop', 'Vào Phường Thị', 'primary', { emoji: '🛒' }))] };
+  return { embeds: [e], components: [ui.row(
+    ui.btn('panel_shop', 'Vào Phường Thị', 'primary', { emoji: '🛒' }),
+    ui.btn('panel_gacha', 'Chiêu Hồn Đài', 'success', { emoji: '🎰' }),
+  )] };
 }
 
 function loRen() {

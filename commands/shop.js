@@ -315,6 +315,16 @@ module.exports = {
   async execute(interaction) { return open(interaction); },
   buttons: {
     async panel_shop(interaction) { return open(interaction); },
+    // Nút 🎰 trên PANEL kênh shop -> mở Chiêu Hồn Đài dạng ẩn (không đụng tin panel chung).
+    async panel_gacha(interaction) {
+      const p = db.getPlayer(interaction.user.id);
+      if (!p) return interaction.reply({ content: 'Đạo hữu chưa nhập đạo! Tới kênh **Sơ Nhập** trước nhé.', flags: MessageFlags.Ephemeral });
+      if ((p.realm || 0) < GACHA_MIN_REALM) {
+        const r = cult.REALMS[GACHA_MIN_REALM];
+        return interaction.reply({ content: `🔒 **Chiêu Hồn Đài** mở ở **${r.emoji} ${r.name}** (cùng Ngự Thú).`, flags: MessageFlags.Ephemeral });
+      }
+      return interaction.reply({ ...chieuHonView(p), flags: MessageFlags.Ephemeral });
+    },
     async shop(interaction) {
       const parts = interaction.customId.split(':');
       const action = parts[1];
