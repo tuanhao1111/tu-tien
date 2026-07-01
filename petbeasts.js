@@ -12,12 +12,13 @@ const cult = require('./cultivation');
 
 const PET = () => config.pet || {};
 
-// --- BẬC THÚ (gacha): độ hiếm tăng dần. buyStones = giá MUA THẲNG trong shop (cao). ---
+// --- BẬC THÚ (gacha): độ hiếm tăng dần. MUA THẲNG trong shop bằng 🔮 Tiên Ngọc +
+//  👻 Yêu Hồn Phách (KHÔNG dùng linh thạch). Giá cao theo bậc. ---
 const TIERS = {
-  pham: { key: 'pham', name: 'Phàm Thú', emoji: '⚪', color: 0xb2bec3, buyStones: 2500 },
-  linh: { key: 'linh', name: 'Linh Thú', emoji: '🟢', color: 0x00b894, buyStones: 8000 },
-  tien: { key: 'tien', name: 'Tiên Thú', emoji: '🟣', color: 0xa29bfe, buyStones: 26000 },
-  than: { key: 'than', name: 'Thần Thú', emoji: '🟡', color: 0xfdcb6e, buyStones: 90000 },
+  pham: { key: 'pham', name: 'Phàm Thú', emoji: '⚪', color: 0xb2bec3, buyPremium: 15,  buyYhp: 40 },
+  linh: { key: 'linh', name: 'Linh Thú', emoji: '🟢', color: 0x00b894, buyPremium: 40,  buyYhp: 120 },
+  tien: { key: 'tien', name: 'Tiên Thú', emoji: '🟣', color: 0xa29bfe, buyPremium: 100, buyYhp: 300 },
+  than: { key: 'than', name: 'Thần Thú', emoji: '🟡', color: 0xfdcb6e, buyPremium: 250, buyYhp: 800 },
 };
 const TIER_ORDER = ['pham', 'linh', 'tien', 'than'];
 function tierInfo(t) { return TIERS[t] || TIERS.pham; }
@@ -58,7 +59,8 @@ const BY_KEY = Object.fromEntries(BEASTS.map((b) => [b.key, b]));
 function beast(key) { return BY_KEY[key] || null; }
 function beastsFor(realm) { return BEASTS.filter((b) => (realm ?? 0) >= b.minRealm); }
 function beastsByTier(t) { return BEASTS.filter((b) => b.tier === t); }
-function buyStonesOf(b) { return tierInfo(b.tier).buyStones; }
+// Giá MUA THẲNG 1 thú: { premium: 🔮 Tiên Ngọc, yhp: 👻 Yêu Hồn Phách } theo bậc.
+function buyCostOf(b) { const ti = tierInfo(b.tier); return { premium: ti.buyPremium || 0, yhp: ti.buyYhp || 0 }; }
 
 function maxLevel() { return PET().maxLevel || 10; }
 
@@ -102,7 +104,7 @@ function evoStage(lv) { return (FEED().evoLevels || []).filter((m) => lv >= m).l
 function imageKey(key, lv) { const s = evoStage(lv); return s > 0 ? `pet_${key}_e${s}` : `pet_${key}`; }
 
 module.exports = {
-  BEASTS, TIERS, TIER_ORDER, beast, beastsFor, beastsByTier, tierInfo, buyStonesOf,
+  BEASTS, TIERS, TIER_ORDER, beast, beastsFor, beastsByTier, tierInfo, buyCostOf,
   maxLevel, bonusAt, strikeAt, levelCost,
   expNeed, breakRate, evoStage, imageKey,
 };

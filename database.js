@@ -1169,20 +1169,33 @@ function gachaPet(id, mode) {
   return { ok: true, beast: res.beast, tier, dup, yhp, pityHit: res.pity, newPity };
 }
 
-// Mua thẳng 1 thú trong Shop (giá cao theo bậc). Trả { ok, beast, cost } hoặc { err }.
+// Mua thẳng 1 thú trong Shop bằng 🔮 Tiên Ngọc + 👻 Yêu Hồn Phách (giá cao theo bậc,
+//  KHÔNG dùng linh thạch). Trả { ok, beast, cost:{premium,yhp} } hoặc { err }.
 function buyPetDirect(id, key) {
   const p = getPlayer(id); if (!p) return { err: 'noplayer' };
   const b = petbeasts.beast(key); if (!b) return { err: 'nobeast' };
   if (getPets(p)[key]) return { err: 'owned' };
-  const cost = petbeasts.buyStonesOf(b);
-  if ((p.stones || 0) < cost) return { err: 'nostones', need: cost };
+  const cost = petbeasts.buyCostOf(b); // { premium, yhp }
+  if ((p.premium || 0) < cost.premium) return { err: 'nopremium', need: cost.premium };
+  if (!hasMaterialsFor(getMaterials(p), { yeu_hon_phach: cost.yhp })) return { err: 'noyhp', need: cost.yhp };
   const tx = db.transaction(() => {
-    addStones(id, -cost);
+    Q.addPremium.run(-cost.premium, id);
+    addMaterials(id, { yeu_hon_phach: -cost.yhp });
     const pets = getPets(p); pets[key] = { lv: 1 }; Q.setPets.run(JSON.stringify(pets), id);
     if (!p.pet_active) Q.setPetActive.run(key, id);
   });
   tx();
   return { ok: true, beast: b, cost };
+}
+
+// ADMIN: cấp thẳng 1 thú (không tốn gì). Trả { ok, beast } hoặc { err }.
+function adminGrantPet(id, key) {
+  const p = getPlayer(id); if (!p) return { err: 'noplayer' };
+  const b = petbeasts.beast(key); if (!b) return { err: 'nobeast' };
+  if (getPets(p)[key]) return { err: 'owned' };
+  const pets = getPets(p); pets[key] = { lv: 1 }; Q.setPets.run(JSON.stringify(pets), id);
+  if (!p.pet_active) Q.setPetActive.run(key, id);
+  return { ok: true, beast: b };
 }
 
 // =====================================================================
@@ -1998,6 +2011,7 @@ module.exports = {
   setActivePet,
   gachaPet,
   buyPetDirect,
+  adminGrantPet,
   getThanLevel,
   getThanThong,
   getActiveThanThong,

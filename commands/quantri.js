@@ -16,9 +16,11 @@ const equipment = require('../equipment');
 const gear = require('../gear');
 const attrsLib = require('../attributes');
 const pvp = require('../pvp');
+const petbeasts = require('../petbeasts');
 const { isAdmin } = require('../util/admin');
 
 const cur = config.currency;
+const pcur = config.premiumCurrency;
 
 // --- Choices dựng sẵn từ dữ liệu game ---
 const MAT_CHOICES = Object.entries(bicanh.MATERIALS).map(([id, m]) => ({ name: `${m.emoji} ${m.name}`, value: id }));
@@ -29,6 +31,7 @@ const ATTR_CHOICES = attrsLib.ORDER.map((k) => { const a = attrsLib.getAttr(k); 
 const SLOT_CHOICES = gear.SLOTS.map((s) => ({ name: `${s.emoji} ${s.name}`, value: s.key }));
 const RARITY_CHOICES = gear.RARITY_ORDER.map((k) => { const r = gear.rarity(k); return { name: `${r.emoji} ${r.name}`, value: k }; });
 const VARIANT_CHOICES = gear.VARIANT_KEYS.map((k) => { const v = gear.VARIANTS[k]; return { name: `${v.emoji} ${v.name}`, value: k }; });
+const BEAST_CHOICES = petbeasts.BEASTS.map((b) => ({ name: `${petbeasts.tierInfo(b.tier).emoji} ${b.name}`, value: b.key }));
 
 const ok = (msg) => ({ embeds: [new EmbedBuilder().setColor(config.colors.success).setDescription(`✅ ${msg}`)] , flags: MessageFlags.Ephemeral });
 const err = (msg) => ({ content: `⚠️ ${msg}`, flags: MessageFlags.Ephemeral });
@@ -93,6 +96,12 @@ module.exports = {
     .addSubcommand((s) => s.setName('tinhthiet').setDescription('Cấp/trừ 🔩 Tinh Thiết (vật phẩm cường hóa).')
       .addUserOption((o) => o.setName('nguoi').setDescription('Tu sĩ').setRequired(true))
       .addIntegerOption((o) => o.setName('so').setDescription('Lượng (âm để trừ)').setRequired(true)))
+    .addSubcommand((s) => s.setName('tienngoc').setDescription('Cấp/trừ 🔮 Tiên Ngọc (số âm = trừ).')
+      .addUserOption((o) => o.setName('nguoi').setDescription('Tu sĩ').setRequired(true))
+      .addIntegerOption((o) => o.setName('so').setDescription('Lượng (âm để trừ)').setRequired(true)))
+    .addSubcommand((s) => s.setName('nguthu').setDescription('Cấp thẳng 1 Ngự Thú cho tu sĩ (miễn phí).')
+      .addUserOption((o) => o.setName('nguoi').setDescription('Tu sĩ').setRequired(true))
+      .addStringOption((o) => o.setName('thu').setDescription('Ngự Thú').setRequired(true).addChoices(...BEAST_CHOICES)))
     .addSubcommand((s) => s.setName('lieuthuong').setDescription('Hồi đầy Sinh Mệnh cho tu sĩ (miễn phí).')
       .addUserOption((o) => o.setName('nguoi').setDescription('Tu sĩ').setRequired(true)))
     .addSubcommand((s) => s.setName('boss').setDescription('Boss Thế Giới: triệu hồi ngay hoặc hạ boss hiện tại.')
@@ -260,6 +269,18 @@ module.exports = {
         const so = interaction.options.getInteger('so');
         db.addRefine(id, so);
         return interaction.reply(ok(`**${p.username}** ${so >= 0 ? 'nhận' : 'bị trừ'} 🔩 **${Math.abs(so)}** Tinh Thiết.`));
+      }
+      case 'tienngoc': {
+        const n = interaction.options.getInteger('so');
+        db.addPremium(id, n);
+        return interaction.reply(ok(`**${p.username}** ${n >= 0 ? '+' : ''}${n}${pcur.short} ${pcur.emoji} → còn **${db.getPlayer(id).premium || 0}${pcur.short}**.`));
+      }
+      case 'nguthu': {
+        const key = interaction.options.getString('thu');
+        const r = db.adminGrantPet(id, key);
+        if (r.err === 'owned') return interaction.reply(err(`**${p.username}** đã sở hữu thú này rồi.`));
+        if (r.err) return interaction.reply(err('Không cấp được Ngự Thú (dữ liệu không hợp lệ).'));
+        return interaction.reply(ok(`**${p.username}** nhận Ngự Thú **${r.beast.emoji} ${r.beast.name}** — trang bị ở **Hồ Sơ → 🐉 Ngự Thú**.`));
       }
       case 'lieuthuong': {
         const st = db.healVit(id, 'full');
